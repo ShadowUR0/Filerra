@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="color-scheme" content="dark">
   <meta name="theme-color" content="#0b0e13">
-  <title>Filerra — مدير الملفات المحلي</title>
+  <title>Filerra — Local File Manager</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e13'/%3E%3Cpath d='M5 10.5a3 3 0 0 1 3-3h5l2.2 2.5H24a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z' fill='%2388b4ff'/%3E%3Cpath d='M5 14h22v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z' fill='%235b8def'/%3E%3C/svg%3E">
   <style>
     :root {
@@ -439,7 +439,7 @@
     Object.assign(I18N.en,{appName:'Filerra'});
     Object.assign(I18N.ar,{imagePreview:'معاينة الصورة',previousImage:'الصورة السابقة',nextImage:'الصورة التالية',loadingImage:'جارٍ فتح الصورة…',imageOpenFailed:'تعذر عرض هذه الصورة.',viewerHint:'استخدم الأسهم للتنقل وEsc للإغلاق.',previewHelp:'انقر مرتين على الصورة لعرضها داخل التطبيق. استخدم الأسهم للانتقال بين الصور، ثم Esc للإغلاق.'});
     Object.assign(I18N.en,{imagePreview:'Image preview',previousImage:'Previous image',nextImage:'Next image',loadingImage:'Opening image…',imageOpenFailed:'This image could not be displayed.',viewerHint:'Use arrow keys to browse and Esc to close.',previewHelp:'Double-click an image to preview it in the app. Use the arrows to browse, then Esc to close.'});
-    function t(key,vars={}){const value=I18N[state?.lang||localStorage.getItem('melf-lang')||'ar']?.[key]??I18N.ar[key]??key;return String(value).replace(/\{(\w+)\}/g,(_,name)=>vars[name]??'')}
+    function t(key,vars={}){const value=I18N[state?.lang||localStorage.getItem('melf-lang')||'en']?.[key]??I18N.en[key]??I18N.ar[key]??key;return String(value).replace(/\{(\w+)\}/g,(_,name)=>vars[name]??'')}
     const state = {
       rootHandle:null, currentHandle:null, path:[], items:[], selected:new Set(), selectionOrder:[], anchorIndex:-1,
       history:[], historyIndex:-1, view:localStorage.getItem('melf-view') || 'grid',
@@ -447,7 +447,7 @@
       clipboard:null, renameId:null, busy:false, searchQuery:'', searchController:null, searchScanned:0,
       recents:[], treeRoot:null, treeNodes:new Map(), dragEntries:null, lastDragEnd:0, thumbUrls:new Map(), thumbObserver:null, thumbJobs:[], thumbActive:0, thumbGeneration:0,
       imageViewer:{entries:[],index:0,url:null,request:0},
-      restoredHandle:null, namingRules:loadJSON('melf-naming-rules',{}), namingContext:null, lang:localStorage.getItem('melf-lang')==='en'?'en':'ar'
+      restoredHandle:null, namingRules:loadJSON('melf-naming-rules',{}), namingContext:null, lang:localStorage.getItem('melf-lang')==='ar'?'ar':'en'
     };
 
     const els = {
@@ -1004,7 +1004,7 @@
        els.namingRemove.addEventListener('click',()=>{const context=state.namingContext;if(context?.mode!=='folder')return;delete state.namingRules[namingRuleKey(context.path)];saveNamingRules();els.namingDialog.close('remove');toast(t('ruleRemoved'),'success')});
     }
     async function init(){
-      wire();if(localStorage.getItem('melf-sidebar')==='0'&&innerWidth>820)els.app.classList.add('sidebar-collapsed');$('#viewBtn use').setAttribute('href',state.view==='grid'?'#i-list':'#i-grid');
+      wire();if(localStorage.getItem('melf-sidebar')==='0'&&innerWidth>820)els.app.classList.add('sidebar-collapsed');$('#viewBtn use').setAttribute('href',state.view==='grid'?'#i-list':'#i-grid');applyLanguage({rerender:false});
       const supported=window.isSecureContext&&'showDirectoryPicker' in window;$('#supportNote').textContent=supported?t('localSupported'):t('contextUnsupported');
       const saved=await loadSavedHandle();if(saved?.handle){state.restoredHandle=saved.handle;els.restoreSection.classList.remove('hidden');els.restoreName.textContent=saved.name||saved.handle.name;els.emptyRestoreBtn.classList.remove('hidden')}
       renderRecents();renderBreadcrumbs();setButtonStates();applyLanguage({rerender:false});

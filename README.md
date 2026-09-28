@@ -1,33 +1,32 @@
 # Filerra
 
-Filerra is a bilingual local file manager that runs entirely in the browser. It uses the File System Access API to manage real files and folders after the user explicitly chooses a root folder and grants permission.
+Filerra is a bilingual local file manager that runs entirely in the browser. It uses the File System Access API to manage real files and folders after the user explicitly selects a root folder and grants permission.
 
 **Live app:** https://shadowur0.github.io/Filerra/
 
-## المزايا
+## Features
 
-- واجهة عربية وإنجليزية مع دعم RTL وLTR.
-- تصفح المجلدات والمسار وشجرة المجلدات.
-- إنشاء المجلدات وإعادة التسمية والنقل والحذف.
-- النسخ والقص واللصق والتحديد المتعدد.
-- السحب والإفلات داخل التطبيق ومن Windows.
-- البحث والترتيب وطريقتا عرض: شبكة وتفاصيل.
-- مصغرات محلية للصور وعارض صور مدمج.
-- قواعد تسمية تلقائية مستقلة لكل مجلد.
-- ترقيم الملفات الموجودة حسب ترتيب التحديد.
-- ملف HTML واحد دون خادم أو مكتبات خارجية.
+- English and Arabic interfaces with LTR and RTL support.
+- Folder navigation, breadcrumbs, recent locations, and a folder tree.
+- Create, rename, move, copy, cut, paste, and permanently delete items.
+- Drag and drop within the app or from Windows Explorer.
+- Multiple selection, search, sorting, grid view, and details view.
+- Efficient local image thumbnails and a built-in image viewer.
+- Per-folder automatic naming rules.
+- Batch numbering based on selection order while preserving extensions.
+- A self-contained `index.html` with no server or external libraries.
 
-## الخصوصية
+## Privacy
 
-لا يرفع Filerra الملفات إلى الإنترنت. جميع العمليات تتم داخل المتصفح على المجلد الذي اختاره المستخدم فقط. قد يطلب المتصفح تجديد إذن الوصول عند فتح جلسة جديدة.
+Filerra does not upload files. All file operations happen locally in the browser and are limited to folders the user explicitly authorizes. The browser may ask for permission again in a later session.
 
-## المتطلبات
+## Browser support
 
-استخدم إصدارًا حديثًا من Google Chrome أو Microsoft Edge على Windows. يحتاج التطبيق إلى سياق آمن، ويوفر GitHub Pages ذلك عبر HTTPS.
+Use a recent version of Google Chrome or Microsoft Edge on Windows. GitHub Pages provides the secure HTTPS context required by the File System Access API.
 
-> الحذف نهائي ولا يمر عبر سلة المحذوفات، لذلك يعرض التطبيق رسالة تأكيد قبل التنفيذ.
+> Deletion is permanent and does not use the Windows Recycle Bin. Filerra always asks for confirmation before deleting.
 
-## التشغيل محليًا
+## Run locally
 
-نزّل `index.html` وافتحه مباشرة في Chrome أو Edge، أو استخدم رابط التطبيق المنشور أعلاه.
+Download `index.html` and open it directly in Chrome or Edge, or use the live app linked above.
 
