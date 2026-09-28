@@ -1,0 +1,1016 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0b0e13">
+  <title>Filerra — مدير الملفات المحلي</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230b0e13'/%3E%3Cpath d='M5 10.5a3 3 0 0 1 3-3h5l2.2 2.5H24a3 3 0 0 1 3 3v9a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z' fill='%2388b4ff'/%3E%3Cpath d='M5 14h22v8a3 3 0 0 1-3 3H8a3 3 0 0 1-3-3z' fill='%235b8def'/%3E%3C/svg%3E">
+  <style>
+    :root {
+      --bg:#090c11; --surface:#10141a; --surface-2:#151a22; --surface-3:#1b222c;
+      --line:#2a323e; --line-soft:#1d242d; --text:#eef2f7; --muted:#99a6b7;
+      --accent:#78aaf8; --accent-strong:#4389ef; --accent-soft:rgba(67,137,239,.16);
+      --danger:#ff6b72; --success:#67d39a; --warning:#f4c56a; --sidebar:260px;
+      --toolbar-h:58px; --status-h:30px; --radius:8px; --shadow:0 18px 60px rgba(0,0,0,.42);
+      font-family:"Segoe UI Variable","Segoe UI",Tahoma,Arial,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:var(--bg);color:var(--text)}
+    body{font-size:14px;line-height:1.45;user-select:none}
+    button,input{font:inherit}
+    button{color:inherit}
+    svg{display:block;pointer-events:none}
+    .app{height:100%;display:grid;grid-template-rows:auto 1fr var(--status-h);background:var(--bg)}
+    .toolbar{min-height:var(--toolbar-h);display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid #303846;background:#11161d;box-shadow:inset 0 -1px 0 rgba(255,255,255,.015);z-index:20}
+    .toolbar-group{display:flex;align-items:center;gap:3px}
+    .toolbar-sep{width:1px;height:26px;background:var(--line);margin:0 4px;flex:0 0 auto}
+    .tool-button,.nav-button,.tree-toggle,.mini-button{border:1px solid transparent;background:transparent;display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:0 10px;border-radius:5px;cursor:pointer;white-space:nowrap;transition:background .14s,border-color .14s,color .14s,transform .08s}
+    .nav-button,.mini-button{width:36px;padding:0}
+    .tool-button:hover,.nav-button:hover,.mini-button:hover{background:var(--surface-3);border-color:#303a49}
+    .tool-button:active,.nav-button:active,.mini-button:active{transform:translateY(1px)}
+    button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    button:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+    .tool-button.primary{background:var(--accent-strong);border-color:#5597fb;color:#fff;font-weight:600}
+    .tool-button.primary:hover{background:#4a91fa}
+    .tool-button.danger:hover{color:#ff9da2;background:rgba(255,107,114,.1);border-color:rgba(255,107,114,.25)}
+    .icon{width:18px;height:18px;flex:0 0 auto}
+    .brand{display:flex;align-items:center;gap:9px;padding:0 5px 0 8px;font-weight:680;letter-spacing:.01em;color:#f4f7fb}
+    .brand-mark{width:25px;height:25px;color:var(--accent)}
+    .search-wrap{margin-inline-start:auto;position:relative;display:flex;align-items:center;width:min(300px,26vw);min-width:170px}
+    .search-wrap .icon{position:absolute;inset-inline-start:10px;color:var(--muted);width:16px;height:16px}
+    .search-input{width:100%;height:36px;border:1px solid var(--line);border-radius:7px;background:#0d1117;color:var(--text);padding:0 35px 0 34px;user-select:text;transition:border-color .15s,box-shadow .15s}
+    .search-input::placeholder{color:#738094}
+    .search-input:focus{border-color:var(--accent-strong);box-shadow:0 0 0 3px rgba(63,134,245,.13);outline:none}
+    .search-clear{position:absolute;inset-inline-end:5px;width:26px;height:26px;border:0;border-radius:5px;background:transparent;color:var(--muted);display:none;align-items:center;justify-content:center;cursor:pointer}
+    .search-clear.visible{display:flex}
+    .lang-button{width:auto;min-width:52px;padding-inline:8px}
+    .lang-label{font-size:11px;font-weight:750;letter-spacing:.06em;color:#c8d7eb}
+    .workspace{min-height:0;display:grid;grid-template-columns:var(--sidebar) minmax(0,1fr)}
+    .app.sidebar-collapsed{--sidebar:0px}
+    .sidebar{min-width:0;overflow:hidden;border-inline-end:1px solid var(--line);background:var(--surface);transition:width .18s,opacity .18s;display:flex;flex-direction:column}
+    .sidebar-collapsed .sidebar{opacity:0;pointer-events:none}
+    .root-card{margin:7px 8px 5px;padding:11px 8px 13px;border:0;border-bottom:1px solid var(--line-soft);background:transparent;border-radius:0;display:flex;align-items:center;gap:10px;min-height:54px;overflow:hidden}
+    .root-card .folder-glyph{width:29px;height:29px;flex:0 0 auto;color:#73a8ff}
+    .root-meta{min-width:0;flex:1}
+    .root-label{font-size:12px;color:var(--muted);margin-bottom:2px}
+    .root-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext}
+    .side-scroll{overflow:auto;overscroll-behavior:contain;padding:3px 7px 14px;scrollbar-width:thin;scrollbar-color:#3b4555 transparent}
+    .side-section{margin-top:13px}
+    .side-heading{display:flex;align-items:center;justify-content:space-between;padding:0 8px 5px;color:#7f8c9d;font-size:12px;font-weight:650}
+    .side-link,.recent-link,.tree-row{width:100%;height:34px;border:0;background:transparent;color:#d7deea;border-radius:5px;padding:0 9px;display:flex;align-items:center;gap:9px;text-align:start;cursor:pointer;overflow:hidden}
+    .side-link:hover,.recent-link:hover,.tree-row:hover{background:#1a202a}
+    .side-link.active,.tree-row.current{background:var(--accent-soft);color:#cfe1ff}
+    .side-link span,.recent-link span,.tree-label{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext}
+    .side-link .icon,.recent-link .icon,.tree-row .icon{width:17px;height:17px;color:#94a5bb;flex:0 0 auto}
+    .tree{min-width:0}
+    .tree-row{padding-inline-start:calc(7px + var(--depth,0) * 15px);gap:4px}
+    .tree-expander{width:22px;height:26px;border:0;background:transparent;color:#8c99a9;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px;flex:0 0 auto}
+    .tree-expander:hover{background:#252d39}
+    .tree-expander.blank{visibility:hidden}
+    .tree-expander .icon{width:13px;height:13px;transition:transform .15s}
+    .tree-row.expanded .tree-expander .icon{transform:rotate(90deg)}
+    [dir="rtl"] .tree-expander .icon{transform:rotate(180deg)}
+    [dir="rtl"] .tree-row.expanded .tree-expander .icon{transform:rotate(90deg)}
+    .tree-label{min-width:0;flex:1}
+    .content{min-width:0;min-height:0;display:grid;grid-template-rows:49px 1fr;background:var(--bg)}
+    .location-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--line-soft);background:#0d1117;min-width:0}
+    .breadcrumbs{height:34px;min-width:0;flex:1;display:flex;align-items:center;overflow:auto;scrollbar-width:none;border:1px solid var(--line);border-radius:6px;background:#10151c;padding:0 5px}
+    .breadcrumbs::-webkit-scrollbar{display:none}
+    .crumb{height:28px;max-width:240px;border:0;background:transparent;color:#c9d2df;border-radius:4px;display:inline-flex;align-items:center;gap:6px;padding:0 7px;cursor:pointer;flex:0 0 auto}
+    .crumb:hover{background:#202733;color:#fff}
+    .crumb span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext}
+    .crumb-sep{color:#586577;flex:0 0 auto}
+    [dir="rtl"] .crumb-sep{transform:rotate(180deg)}
+    .location-meta{color:var(--muted);font-size:12px;white-space:nowrap}
+    .file-viewport{position:relative;min-height:0;overflow:auto;overscroll-behavior:contain;scrollbar-color:#3b4555 #0b0e13;outline:none}
+    .file-viewport.drag-target::after{content:attr(data-drop-label);position:absolute;top:14px;left:50%;transform:translateX(-50%);max-width:calc(100% - 28px);padding:9px 16px;border:1px solid rgba(109,167,255,.65);border-radius:7px;background:rgba(24,35,51,.96);box-shadow:0 8px 28px rgba(0,0,0,.34);color:#d7e7ff;font-size:14px;font-weight:600;z-index:8;pointer-events:none;white-space:nowrap}
+    .file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(136px,154px));grid-auto-rows:max-content;align-content:start;justify-content:start;gap:10px;padding:14px;min-height:100%}
+    .file-item{position:relative;min-width:0;border:1px solid transparent;background:transparent;color:var(--text);border-radius:7px;cursor:default}
+    .file-grid .file-item{height:154px;padding:10px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:7px}
+    .file-item:hover{background:#141a22;border-color:#26313e}
+    .file-item.selected{background:var(--accent-soft);border-color:rgba(107,164,248,.56);box-shadow:inset 0 0 0 1px rgba(120,170,248,.08)}
+    .file-item.drop-target{background:rgba(103,211,154,.11);border-color:var(--success)}
+    .file-item.cut{opacity:.52}
+    .drag-ghost{position:fixed;top:-1000px;left:-1000px;z-index:-1;max-width:280px;height:38px;padding:0 11px;display:flex;align-items:center;gap:9px;border:1px solid #4a668b;border-radius:6px;background:#1b2635;color:#f1f6ff;box-shadow:0 8px 24px rgba(0,0,0,.4);font:600 13px/1.2 "Segoe UI Variable","Segoe UI",Tahoma,Arial,sans-serif;white-space:nowrap;overflow:hidden}
+    .drag-ghost-name{overflow:hidden;text-overflow:ellipsis;unicode-bidi:plaintext}
+    .drag-ghost-count{min-width:22px;height:22px;padding:0 6px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--accent-strong);color:#fff;font-size:11px;flex:0 0 auto}
+    .item-visual{height:92px;width:100%;display:flex;align-items:center;justify-content:center;min-width:0;overflow:hidden;border-radius:4px}
+    .file-thumb{display:block;max-width:100%;width:100%;height:100%;object-fit:contain;border-radius:4px;box-shadow:0 2px 10px rgba(0,0,0,.25);-webkit-user-drag:none;user-drag:none;pointer-events:none}
+    .file-icon{width:62px;height:62px;color:#94a9c6;filter:drop-shadow(0 5px 8px rgba(0,0,0,.2))}
+    .folder-icon{width:70px;height:70px;color:#649af1;filter:drop-shadow(0 5px 8px rgba(0,0,0,.24))}
+    .type-badge{position:absolute;top:71px;inset-inline-end:34px;min-width:27px;padding:1px 4px;border-radius:3px;background:#34465f;color:#e4ecf8;border:1px solid #4a607e;font-size:9px;line-height:15px;font-weight:700;text-align:center;text-transform:uppercase}
+    .item-name{width:100%;min-width:0;text-align:center;line-height:1.32;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:anywhere;unicode-bidi:plaintext}
+    .rename-input{width:100%;height:28px;border:1px solid var(--accent);background:#0d131b;color:#fff;border-radius:4px;padding:2px 6px;outline:none;user-select:text;text-align:start;unicode-bidi:plaintext}
+    .selection-check{display:none;position:absolute;top:7px;inset-inline-start:7px;min-width:19px;height:19px;padding:0 5px;border-radius:10px;background:var(--accent-strong);color:#fff;align-items:center;justify-content:center;z-index:3;box-shadow:0 1px 4px rgba(0,0,0,.3);font-size:10px;font-weight:700;line-height:1}
+    .file-item.selected .selection-check{display:flex}
+    .selection-check .icon{width:12px;height:12px}
+    .details-view{min-width:720px;min-height:100%}
+    .details-head,.details-row{display:grid;grid-template-columns:minmax(280px,1.8fr) minmax(130px,.65fr) minmax(100px,.45fr) minmax(170px,.75fr);align-items:center;column-gap:10px}
+    .details-head{position:sticky;top:0;height:39px;padding:0 18px;background:#12171e;border-bottom:1px solid #303946;color:#a2adbb;font-size:12px;z-index:5}
+    .details-head button{height:100%;border:0;background:transparent;color:inherit;text-align:start;padding:0;cursor:pointer;display:flex;align-items:center;gap:5px}
+    .details-head button:hover{color:#fff}
+    .details-row.file-item{height:44px;border-radius:0;border-width:0 0 1px;padding:0 18px;border-color:#171d26}
+    .details-row.file-item:hover{background:#141a22}
+    .details-row.file-item.selected{background:var(--accent-soft);box-shadow:inset 3px 0 0 var(--accent)}
+    [dir="rtl"] .details-row.file-item.selected{box-shadow:inset -3px 0 0 var(--accent)}
+    .details-name{min-width:0;display:flex;align-items:center;gap:10px}
+    .details-name .file-icon,.details-name .folder-icon{width:26px;height:26px;filter:none;flex:0 0 auto}
+    .details-name .file-thumb{width:30px;height:30px;object-fit:cover;flex:0 0 auto;box-shadow:none}
+    .details-name .item-name{display:block;white-space:nowrap;text-overflow:ellipsis;text-align:start;overflow:hidden}
+    .detail-cell{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#aeb8c7;unicode-bidi:plaintext}
+    .details-row .selection-check{top:13px;inset-inline-start:4px;width:16px;height:16px}
+    .empty-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:32px;pointer-events:none}
+    .empty-card{width:min(520px,100%);text-align:center;pointer-events:auto}
+    .empty-visual{width:86px;height:86px;margin:0 auto 17px;color:#5f8fdc;opacity:.9}
+    .empty-card h1{font-size:22px;margin:0 0 8px;font-weight:650}
+    .empty-card p{color:var(--muted);font-size:15px;line-height:1.75;margin:0 auto 20px;max-width:470px}
+    .empty-actions{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+    .empty-note{margin-top:17px!important;font-size:12px!important;color:#748195!important}
+    .statusbar{height:var(--status-h);display:flex;align-items:center;gap:14px;padding:0 12px;border-top:1px solid var(--line);background:#10141a;color:#8f9cad;font-size:12px;overflow:hidden}
+    .statusbar .spacer{flex:1}
+    .permission{display:flex;align-items:center;gap:6px;white-space:nowrap}
+    .permission-dot{width:7px;height:7px;border-radius:50%;background:#596575}
+    .permission.ok .permission-dot{background:var(--success);box-shadow:0 0 0 3px rgba(103,211,154,.09)}
+    .busy-line{position:fixed;top:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),#a6c9ff,transparent);width:35%;z-index:100;animation:busy 1.2s linear infinite;display:none}
+    body.busy .busy-line{display:block}
+    @keyframes busy{from{transform:translateX(-290%)}to{transform:translateX(290%)}}
+    .popover,.context-menu{position:fixed;z-index:60;min-width:190px;padding:6px;background:#1a2029;border:1px solid #333d4b;border-radius:7px;box-shadow:var(--shadow);display:none}
+    .context-menu{min-width:235px}
+    .popover.open,.context-menu.open{display:block}
+    .menu-item{width:100%;height:34px;border:0;background:transparent;color:#e1e7ef;border-radius:4px;padding:0 9px;display:flex;align-items:center;gap:10px;text-align:start;cursor:pointer}
+    .menu-item:hover{background:#28313f}
+    .menu-item:disabled{opacity:.38;cursor:not-allowed}
+    .menu-item.danger{color:#ff9ea3}
+    .menu-item .icon{width:16px;height:16px;color:#9eacc0}
+    .menu-item.danger .icon{color:#ff7c82}
+    .menu-sep{height:1px;background:#303946;margin:5px 3px}
+    .menu-check{margin-inline-start:auto;color:var(--accent)}
+    dialog{border:1px solid #354050;border-radius:9px;background:#171d26;color:var(--text);padding:0;width:min(460px,calc(100vw - 28px));box-shadow:var(--shadow)}
+    dialog::backdrop{background:rgba(2,5,9,.7);backdrop-filter:blur(3px)}
+    .dialog-head{display:flex;align-items:center;gap:10px;padding:16px 18px 10px}
+    .dialog-head .icon{color:var(--accent);width:22px;height:22px}
+    .dialog-title{font-size:17px;font-weight:650}
+    .dialog-body{padding:3px 18px 17px;color:#bac4d1;line-height:1.75;white-space:pre-line;user-select:text}
+    .dialog-input{width:100%;height:38px;margin-top:12px;border:1px solid #3a4657;border-radius:6px;background:#0e131a;color:#fff;padding:0 10px;outline:none;user-select:text;unicode-bidi:plaintext}
+    .dialog-input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,134,245,.13)}
+    .dialog-actions{display:flex;justify-content:flex-start;gap:8px;padding:11px 18px 16px;border-top:1px solid #29313d}
+    .dialog-actions button{height:36px;padding:0 16px;border-radius:6px;border:1px solid #3a4657;background:#212935;color:#e6ebf2;cursor:pointer}
+    .dialog-actions button:hover{background:#2a3442}
+    .dialog-actions .confirm{background:var(--accent-strong);border-color:#5798fb;color:#fff}
+    .dialog-actions .danger-confirm{background:#c9464e;border-color:#e25f66;color:#fff}
+    .naming-dialog{width:min(560px,calc(100vw - 28px))}
+    .naming-intro{margin:0 0 14px;color:#aeb9c7;line-height:1.65}
+    .naming-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-field{display:flex;flex-direction:column;gap:6px;min-width:0}
+    .form-field.full{grid-column:1/-1}
+    .form-label{color:#aeb8c7;font-size:13px;font-weight:600}
+    .form-control{width:100%;height:38px;border:1px solid #3a4657;border-radius:6px;background:#0e131a;color:#fff;padding:0 10px;outline:none;user-select:text}
+    .form-control:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(63,134,245,.13)}
+    .check-row{min-height:36px;display:flex;align-items:center;gap:9px;color:#d7deea;cursor:pointer}
+    .check-row input{width:17px;height:17px;accent-color:var(--accent-strong)}
+    .naming-preview{margin-top:14px;padding:11px 12px;border:1px solid #2e4056;border-radius:6px;background:#101824}
+    .naming-preview-label{color:#8190a3;font-size:12px;margin-bottom:6px}
+    .naming-preview-value{color:#d9e8ff;font-family:Consolas,"Segoe UI",sans-serif;direction:ltr;text-align:left;unicode-bidi:plaintext;overflow-wrap:anywhere}
+    .dialog-actions .secondary-danger{margin-inline-start:auto;color:#ff9da2;border-color:rgba(255,107,114,.35);background:rgba(255,107,114,.06)}
+    .help-dialog{width:min(760px,calc(100vw - 28px));max-height:min(760px,calc(100vh - 34px))}
+    .help-body{padding:0 18px 18px;max-height:calc(100vh - 150px);overflow:auto;scrollbar-width:thin;scrollbar-color:#3b4555 transparent}
+    .help-hero{display:flex;align-items:flex-start;gap:14px;padding:13px 0 17px;border-bottom:1px solid var(--line)}
+    .help-hero-icon{width:40px;height:40px;padding:9px;border:1px solid #38516f;border-radius:7px;background:#152235;color:var(--accent);flex:0 0 auto}
+    .help-hero h2{font-size:17px;margin:0 0 4px}.help-hero p{margin:0;color:var(--muted);line-height:1.6}
+    .help-section{padding:18px 0 2px}
+    .help-section h3{font-size:14px;margin:0 0 10px;color:#f0f4f9}
+    .help-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:7px;overflow:hidden}
+    .help-step{background:#12171e;padding:13px;min-height:100px}
+    .help-step-number{width:23px;height:23px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:var(--accent-soft);color:#bcd6ff;font-size:11px;font-weight:750;margin-bottom:9px}
+    .help-step strong{display:block;margin-bottom:4px}.help-step span{color:var(--muted);font-size:13px;line-height:1.5}
+    .shortcut-list{border:1px solid var(--line);border-radius:7px;overflow:hidden}
+    .shortcut-row{display:grid;grid-template-columns:minmax(160px,1fr) auto;align-items:center;gap:16px;min-height:39px;padding:7px 11px;border-bottom:1px solid var(--line-soft)}
+    .shortcut-row:last-child{border-bottom:0}.shortcut-row span{color:#cdd5df}.keys{display:flex;gap:4px;direction:ltr}
+    kbd{min-width:28px;padding:3px 7px;border:1px solid #3b4655;border-bottom-color:#566274;border-radius:4px;background:#1b222c;color:#e8edf4;font:600 11px/1.3 "Segoe UI",sans-serif;text-align:center;box-shadow:0 1px 0 #06080b}
+    .help-note{padding:11px 12px;border-inline-start:3px solid var(--accent);background:#111925;color:#b7c5d7;line-height:1.65}
+    .image-dialog{width:min(1220px,calc(100vw - 32px));height:min(900px,calc(100vh - 32px));max-width:none;max-height:none;overflow:hidden;background:#0c1016;border-color:#354050}
+    .image-dialog::backdrop{background:rgba(0,0,0,.88);backdrop-filter:none}
+    .image-viewer{height:100%;display:grid;grid-template-rows:48px minmax(0,1fr) 38px}
+    .image-viewer-head,.image-viewer-foot{display:flex;align-items:center;gap:12px;padding:0 14px;background:#121820}
+    .image-viewer-head{border-bottom:1px solid var(--line)}
+    .image-viewer-foot{border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+    .image-viewer-title{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;unicode-bidi:plaintext;font-weight:600}
+    .image-viewer-counter{direction:ltr;unicode-bidi:isolate;color:#aebdd0;font-size:12px}
+    .image-viewer-close,.image-viewer-arrow{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border:1px solid transparent;border-radius:5px;background:transparent;color:#e9f0fa;cursor:pointer;flex:0 0 auto}
+    .image-viewer-close:hover,.image-viewer-arrow:hover{background:#263140;border-color:#394a5e}
+    .image-viewer-arrow:disabled{opacity:.28;cursor:default}
+    .image-viewer-close .icon,.image-viewer-arrow .icon{width:20px;height:20px}
+    .image-viewer-stage{min-height:0;min-width:0;display:grid;grid-template-columns:46px minmax(0,1fr) 46px;align-items:center;gap:4px;padding:12px;background:#090c11}
+    .image-viewer-stage .image-viewer-arrow{justify-self:center}
+    .image-viewer-canvas{min-width:0;min-height:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;overflow:hidden}
+    .image-viewer-image{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;user-select:none;-webkit-user-drag:none}
+    .image-viewer-message{color:#aebdd0;text-align:center;line-height:1.6}
+    .image-viewer-hint{margin-inline-start:auto}
+    [dir="rtl"] .image-viewer-arrow .icon{transform:rotate(180deg)}
+    @media (max-width:650px){.image-dialog{width:calc(100vw - 12px);height:calc(100vh - 12px)}.image-viewer-stage{grid-template-columns:34px minmax(0,1fr) 34px;gap:0;padding:5px}.image-viewer-foot{font-size:11px}.image-viewer-hint{display:none}}
+    @media (max-width:560px){.naming-grid{grid-template-columns:1fr}.form-field.full{grid-column:auto}}
+    @media (max-width:650px){.help-steps{grid-template-columns:1fr}.shortcut-row{grid-template-columns:1fr}.keys{justify-content:flex-start}}
+    .toast-stack{position:fixed;bottom:45px;inset-inline-start:16px;z-index:90;display:flex;flex-direction:column;gap:8px;pointer-events:none;width:min(390px,calc(100vw - 32px))}
+    .toast{display:flex;align-items:flex-start;gap:10px;padding:11px 13px;border-radius:7px;background:#212934;border:1px solid #374352;box-shadow:0 10px 32px rgba(0,0,0,.35);color:#edf2f8;animation:toast-in .2s ease;pointer-events:auto}
+    .toast.error{border-color:rgba(255,107,114,.5)}
+    .toast.success{border-color:rgba(103,211,154,.43)}
+    .toast .icon{width:18px;height:18px;margin-top:1px;color:var(--accent);flex:0 0 auto}
+    .toast.error .icon{color:var(--danger)} .toast.success .icon{color:var(--success)}
+    .toast-text{min-width:0;flex:1;user-select:text}
+    @keyframes toast-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+    .search-banner{display:flex;align-items:center;gap:9px;margin:10px 12px 0;padding:8px 11px;background:#111923;border:1px solid #26384d;border-radius:6px;color:#afc7e8}
+    .search-banner .icon{width:16px;height:16px;color:var(--accent)}
+    .search-banner button{margin-inline-start:auto;border:0;background:transparent;color:#b7c6d9;cursor:pointer}
+    .hidden{display:none!important}
+    @media (max-width:1500px){.secondary-actions .tool-button:not(#chooseRootBtn){width:36px;padding:0}.secondary-actions .tool-button:not(#chooseRootBtn) .tool-label{display:none}.toolbar-sep{margin-inline:2px}.search-wrap{width:min(270px,24vw)}}
+    @media (max-width:1180px){.tool-label{display:none}.tool-button{width:36px;padding:0}.brand span{display:none}.toolbar-sep{margin:0 2px}.search-wrap{width:min(260px,29vw)}}
+    @media (max-width:820px){:root{--sidebar:230px}.workspace{grid-template-columns:0 minmax(0,1fr)}.sidebar{position:fixed;top:var(--toolbar-h);bottom:var(--status-h);inset-inline-start:0;width:260px;z-index:40;box-shadow:18px 0 50px rgba(0,0,0,.45);transform:translateX(-105%);opacity:1!important;pointer-events:auto!important}.app.mobile-sidebar .sidebar{transform:none}.sidebar{transition:transform .18s}[dir="rtl"] .sidebar{transform:translateX(105%);box-shadow:-18px 0 50px rgba(0,0,0,.45)}[dir="rtl"] .app.mobile-sidebar .sidebar{transform:none}.search-wrap{min-width:130px;width:190px}.location-meta{display:none}.details-head,.details-row{grid-template-columns:minmax(250px,1fr) 120px 145px}.details-head>:nth-child(3),.details-row>:nth-child(3){display:none}}
+    @media (max-width:620px){.toolbar{gap:2px;padding-inline:5px}.toolbar .secondary-actions .tool-button:nth-child(n+5){display:none}.toolbar-sep.optional{display:none}.search-wrap{width:145px;min-width:110px}.file-grid{grid-template-columns:repeat(auto-fill,minmax(120px,1fr));padding:8px;gap:5px}.file-grid .file-item{height:137px}.item-visual{height:80px}.details-view{min-width:580px}.breadcrumbs{padding:0 3px}.crumb{max-width:150px}}
+    @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+  </style>
+</head>
+<body>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="i-folder" viewBox="0 0 64 64"><path fill="currentColor" d="M5 16.5A6.5 6.5 0 0 1 11.5 10h14l6 6H52a7 7 0 0 1 7 7v24a7 7 0 0 1-7 7H12a7 7 0 0 1-7-7z"/><path fill="#8bb7ff" opacity=".5" d="M5 24h54v23a7 7 0 0 1-7 7H12a7 7 0 0 1-7-7z"/></symbol>
+      <symbol id="i-file" viewBox="0 0 64 64"><path fill="currentColor" d="M14 5h23l14 14v36a4 4 0 0 1-4 4H14a4 4 0 0 1-4-4V9a4 4 0 0 1 4-4z"/><path fill="#dfe9f7" opacity=".26" d="M37 5v12a4 4 0 0 0 4 4h10z"/><path fill="#fff" opacity=".25" d="M18 30h25v3H18zm0 8h25v3H18zm0 8h17v3H18z"/></symbol>
+      <symbol id="i-image" viewBox="0 0 64 64"><path fill="currentColor" d="M13 6h38a5 5 0 0 1 5 5v42a5 5 0 0 1-5 5H13a5 5 0 0 1-5-5V11a5 5 0 0 1 5-5z"/><circle cx="22" cy="21" r="6" fill="#fff" opacity=".55"/><path d="m13 49 12-14 8 8 6-7 12 13z" fill="#fff" opacity=".38"/></symbol>
+      <symbol id="i-video" viewBox="0 0 64 64"><rect x="7" y="8" width="50" height="48" rx="6" fill="currentColor"/><path d="m27 22 17 10-17 10z" fill="#fff" opacity=".72"/><path d="M8 17h48M8 47h48M18 9v8m14-8v8m14-8v8M18 47v8m14-8v8m14-8v8" stroke="#fff" stroke-width="3" opacity=".25"/></symbol>
+      <symbol id="i-audio" viewBox="0 0 64 64"><path d="M25 15v31.5a10 10 0 1 1-6-9.2V19l31-7v27.5a10 10 0 1 1-6-9.2V7z" fill="currentColor"/></symbol>
+      <symbol id="i-archive" viewBox="0 0 64 64"><path d="M10 7h44v12H10zm4 16h36v34H14z" fill="currentColor"/><path d="M25 30h14v5H25z" fill="#fff" opacity=".55"/></symbol>
+      <symbol id="i-code" viewBox="0 0 64 64"><path d="M14 5h31l9 9v45H14z" fill="currentColor"/><path d="m28 27-9 7 9 7m8-14 9 7-9 7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" opacity=".7"/></symbol>
+      <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-forward" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-up" viewBox="0 0 24 24"><path d="m5 14 7-7 7 7M12 7v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 6m2 0v-6h-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-folder-plus" viewBox="0 0 24 24"><path d="M3 7a3 3 0 0 1 3-3h4l2 3h6a3 3 0 0 1 3 3v7a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3zM12 10v7m-3.5-3.5h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-5 5 5-5 5 5M5 14v5h14v-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-cut" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="18" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m8.5 7.5 11 8M8.5 16.5l11-8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-paste" viewBox="0 0 24 24"><path d="M9 5h6v3H9zM8 6H6a2 2 0 0 0-2 2v11h9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M14 11h6v9h-6z" fill="none" stroke="currentColor" stroke-width="1.8"/></symbol>
+      <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m3 0-1 13H7L6 7m4 4v5m4-5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-rename" viewBox="0 0 24 24"><path d="M4 19h5l10-10-5-5L4 14zm8-13 5 5M3 21h18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-grid" viewBox="0 0 24 24"><path d="M4 4h6v6H4zm10 0h6v6h-6zM4 14h6v6H4zm10 0h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+      <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-sort" viewBox="0 0 24 24"><path d="M8 4v16m0 0-4-4m4 4 4-4M16 20V4m0 0-4 4m4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="m15.5 15.5 5 5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+      <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 11 9-8 9 8v9h-6v-6H9v6H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+      <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+      <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 11v6m0-10v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.6 9a2.6 2.6 0 1 1 3.2 2.5c-.8.25-1.3.8-1.3 1.5v.5m.5 3.4v.1" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></symbol>
+      <symbol id="i-language" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M3.5 12h17M12 3c2.3 2.4 3.5 5.4 3.5 9S14.3 18.6 12 21M12 3C9.7 5.4 8.5 8.4 8.5 12s1.2 6.6 3.5 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+      <symbol id="i-warning" viewBox="0 0 24 24"><path d="M12 3 2.7 20h18.6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M12 9v5m0 3v.1" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></symbol>
+      <symbol id="i-open" viewBox="0 0 24 24"><path d="M5 4h6l2 3h6a2 2 0 0 1 2 2v2M3 10h15l-3 10H5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+    </defs>
+  </svg>
+
+  <div class="busy-line"></div>
+  <div id="app" class="app">
+    <header class="toolbar">
+      <button id="sidebarToggle" class="nav-button" title="إظهار أو إخفاء الشريط الجانبي" aria-label="الشريط الجانبي"><svg class="icon"><use href="#i-menu"/></svg></button>
+      <div class="brand" aria-label="Filerra"><svg class="brand-mark"><use href="#i-folder"/></svg><span>Filerra</span></div>
+      <div class="toolbar-sep"></div>
+      <div class="toolbar-group">
+        <button id="backBtn" class="nav-button" title="رجوع (Alt+يسار)" aria-label="رجوع" disabled><svg class="icon"><use href="#i-back"/></svg></button>
+        <button id="forwardBtn" class="nav-button" title="تقدم (Alt+يمين)" aria-label="تقدم" disabled><svg class="icon"><use href="#i-forward"/></svg></button>
+        <button id="upBtn" class="nav-button" title="مجلد واحد لأعلى (Alt+أعلى)" aria-label="لأعلى" disabled><svg class="icon"><use href="#i-up"/></svg></button>
+        <button id="refreshBtn" class="nav-button" title="تحديث (F5)" aria-label="تحديث" disabled><svg class="icon"><use href="#i-refresh"/></svg></button>
+      </div>
+      <div class="toolbar-sep"></div>
+      <div class="toolbar-group secondary-actions">
+        <button id="chooseRootBtn" class="tool-button primary" title="اختيار المجلد الجذر"><svg class="icon"><use href="#i-open"/></svg><span class="tool-label">اختيار مجلد</span></button>
+        <button id="newFolderBtn" class="tool-button" title="مجلد جديد (Ctrl+Shift+N)" disabled><svg class="icon"><use href="#i-folder-plus"/></svg><span class="tool-label">مجلد جديد</span></button>
+        <button id="addFilesBtn" class="tool-button" title="إضافة ملفات" disabled><svg class="icon"><use href="#i-upload"/></svg><span class="tool-label">إضافة ملفات</span></button>
+        <button id="copyBtn" class="tool-button" title="نسخ (Ctrl+C)" disabled><svg class="icon"><use href="#i-copy"/></svg><span class="tool-label">نسخ</span></button>
+        <button id="cutBtn" class="tool-button" title="قص (Ctrl+X)" disabled><svg class="icon"><use href="#i-cut"/></svg><span class="tool-label">قص</span></button>
+        <button id="pasteBtn" class="tool-button" title="لصق (Ctrl+V)" disabled><svg class="icon"><use href="#i-paste"/></svg><span class="tool-label">لصق</span></button>
+        <button id="deleteBtn" class="tool-button danger" title="حذف (Delete)" disabled><svg class="icon"><use href="#i-trash"/></svg><span class="tool-label">حذف</span></button>
+        <button id="renameBtn" class="tool-button" title="إعادة تسمية (F2)" disabled><svg class="icon"><use href="#i-rename"/></svg><span class="tool-label">تسمية</span></button>
+      </div>
+      <div class="toolbar-sep optional"></div>
+      <div class="toolbar-group">
+        <button id="viewBtn" class="nav-button" title="التبديل بين الشبكة والقائمة" aria-label="طريقة العرض" disabled><svg class="icon"><use href="#i-list"/></svg></button>
+        <button id="sortBtn" class="nav-button" title="ترتيب" aria-label="ترتيب" disabled><svg class="icon"><use href="#i-sort"/></svg></button>
+      </div>
+      <div class="search-wrap">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <input id="searchInput" class="search-input" type="search" placeholder="ابحث في المجلد الجذر" aria-label="بحث" autocomplete="off" disabled>
+        <button id="searchClear" class="search-clear" aria-label="مسح البحث" title="مسح"><svg class="icon"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="toolbar-group utility-actions">
+        <button id="langBtn" class="nav-button lang-button" title="English" aria-label="Switch to English"><svg class="icon"><use href="#i-language"/></svg><span id="langLabel" class="lang-label">EN</span></button>
+        <button id="helpBtn" class="nav-button" title="دليل الاستخدام" aria-label="دليل الاستخدام"><svg class="icon"><use href="#i-help"/></svg></button>
+      </div>
+    </header>
+
+    <div class="workspace">
+      <aside class="sidebar" aria-label="التنقل بين المجلدات">
+        <div class="root-card">
+          <svg class="folder-glyph"><use href="#i-folder"/></svg>
+          <div class="root-meta"><div class="root-label">المجلد الجذر</div><div id="rootName" class="root-name" title="لم يتم الاختيار">لم يتم الاختيار</div></div>
+        </div>
+        <div class="side-scroll">
+          <button id="homeLink" class="side-link active" disabled><svg class="icon"><use href="#i-home"/></svg><span>الرئيسية / الجذر</span></button>
+          <section id="restoreSection" class="side-section hidden">
+            <div class="side-heading">آخر جلسة</div>
+            <button id="restoreBtn" class="recent-link"><svg class="icon"><use href="#i-clock"/></svg><span id="restoreName">استعادة المجلد السابق</span></button>
+          </section>
+          <section class="side-section">
+            <div class="side-heading"><span>المجلدات الأخيرة</span></div>
+            <div id="recentList"></div>
+          </section>
+          <section class="side-section">
+            <div class="side-heading"><span>شجرة المجلدات</span></div>
+            <div id="folderTree" class="tree"></div>
+          </section>
+        </div>
+      </aside>
+
+      <main class="content">
+        <div class="location-bar">
+          <div id="breadcrumbs" class="breadcrumbs" aria-label="المسار"></div>
+          <div id="locationMeta" class="location-meta">—</div>
+        </div>
+        <div id="fileViewport" class="file-viewport" tabindex="0" aria-label="الملفات والمجلدات">
+          <div id="searchBanner" class="search-banner hidden"><svg class="icon"><use href="#i-search"/></svg><span id="searchBannerText"></span><button id="cancelSearch">إنهاء البحث</button></div>
+          <div id="fileArea"></div>
+          <div id="emptyState" class="empty-state">
+            <div class="empty-card">
+              <svg class="empty-visual"><use href="#i-folder"/></svg>
+              <h1>اختر مجلدًا للبدء</h1>
+              <p>ستبقى ملفاتك على جهازك. لا يقرأ التطبيق أي شيء حتى تختار مجلدًا بنفسك وتمنحه الإذن.</p>
+              <div class="empty-actions"><button id="emptyChooseBtn" class="tool-button primary"><svg class="icon"><use href="#i-open"/></svg>اختيار المجلد الجذر</button><button id="emptyRestoreBtn" class="tool-button hidden"><svg class="icon"><use href="#i-clock"/></svg>استعادة آخر مجلد</button></div>
+              <p id="supportNote" class="empty-note">يتطلب Google Chrome أو Microsoft Edge حديثًا.</p>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <footer class="statusbar">
+      <span id="itemStatus">جاهز</span><span id="selectionStatus"></span><span class="spacer"></span><span id="taskStatus"></span>
+      <span id="permissionStatus" class="permission"><span class="permission-dot"></span><span>لا يوجد مجلد مفتوح</span></span>
+    </footer>
+  </div>
+
+  <div id="sortMenu" class="popover" role="menu">
+    <button class="menu-item" data-sort="name">الاسم <span class="menu-check"></span></button>
+    <button class="menu-item" data-sort="type">النوع <span class="menu-check"></span></button>
+    <button class="menu-item" data-sort="size">الحجم <span class="menu-check"></span></button>
+    <button class="menu-item" data-sort="modified">تاريخ التعديل <span class="menu-check"></span></button>
+    <div class="menu-sep"></div>
+    <button class="menu-item" data-direction="asc">تصاعدي <span class="menu-check"></span></button>
+    <button class="menu-item" data-direction="desc">تنازلي <span class="menu-check"></span></button>
+  </div>
+
+  <div id="contextMenu" class="context-menu" role="menu"></div>
+
+  <dialog id="modal">
+    <form method="dialog" id="modalForm">
+      <div class="dialog-head"><svg class="icon"><use id="modalIcon" href="#i-info"/></svg><div id="modalTitle" class="dialog-title"></div></div>
+      <div class="dialog-body"><div id="modalMessage"></div><input id="modalInput" class="dialog-input hidden" autocomplete="off"></div>
+      <div class="dialog-actions"><button id="modalConfirm" value="confirm" class="confirm">موافق</button><button value="cancel">إلغاء</button></div>
+    </form>
+  </dialog>
+  <dialog id="namingDialog" class="naming-dialog">
+    <form method="dialog" id="namingForm">
+      <div class="dialog-head"><svg class="icon"><use href="#i-rename"/></svg><div id="namingTitle" class="dialog-title">التسمية التلقائية</div></div>
+      <div class="dialog-body">
+        <p id="namingIntro" class="naming-intro"></p>
+        <div class="naming-grid">
+          <label id="namingEnabledRow" class="check-row form-field full"><input id="namingEnabled" type="checkbox" checked><span>تفعيل القاعدة لهذا المجلد</span></label>
+          <label class="form-field"><span class="form-label">تطبيق القاعدة على</span><select id="namingScope" class="form-control"><option value="images">الصور فقط</option><option value="files">كل الملفات</option></select></label>
+          <label class="form-field"><span class="form-label">بادئة اختيارية</span><input id="namingPrefix" class="form-control" type="text" placeholder="مثال: page_" dir="auto"></label>
+          <label class="form-field"><span class="form-label">ابدأ من الرقم</span><input id="namingStart" class="form-control" type="number" min="0" max="999999" value="0"></label>
+          <label class="form-field"><span class="form-label">عدد الخانات</span><select id="namingPadding" class="form-control"><option value="1">بدون أصفار — 0، 1، 2</option><option value="2" selected>خانتان — 00، 01، 02</option><option value="3">3 خانات — 000، 001</option><option value="4">4 خانات — 0000، 0001</option><option value="5">5 خانات</option></select></label>
+          <label class="check-row form-field full"><input id="namingPlainZero" type="checkbox"><span>اكتب الصفر الأول وحده: 0، ثم 01، 02…</span></label>
+        </div>
+        <div class="naming-preview"><div class="naming-preview-label">معاينة الأسماء</div><div id="namingPreview" class="naming-preview-value">00.jpg · 01.jpg · 02.jpg</div></div>
+      </div>
+      <div class="dialog-actions"><button id="namingSave" value="confirm" class="confirm">حفظ القاعدة</button><button value="cancel">إلغاء</button><button id="namingRemove" type="button" class="secondary-danger">إزالة القاعدة</button></div>
+    </form>
+  </dialog>
+  <dialog id="helpDialog" class="help-dialog">
+    <form method="dialog">
+      <div class="dialog-head"><svg class="icon"><use href="#i-help"/></svg><div id="helpTitle" class="dialog-title">دليل الاستخدام</div></div>
+      <div id="helpBody" class="help-body"></div>
+      <div class="dialog-actions"><button value="close" class="confirm" data-i18n="close">إغلاق</button></div>
+    </form>
+  </dialog>
+  <dialog id="imageDialog" class="image-dialog" aria-label="معاينة الصورة">
+    <div class="image-viewer">
+      <div class="image-viewer-head"><span id="imageViewerTitle" class="image-viewer-title" dir="auto"></span><span id="imageViewerCounter" class="image-viewer-counter"></span><button id="imageViewerClose" class="image-viewer-close" type="button" aria-label="إغلاق" title="إغلاق"><svg class="icon"><use href="#i-close"/></svg></button></div>
+      <div class="image-viewer-stage"><button id="imageViewerPrev" class="image-viewer-arrow" type="button" aria-label="الصورة السابقة"><svg class="icon"><use href="#i-back"/></svg></button><div class="image-viewer-canvas"><img id="imageViewerImage" class="image-viewer-image hidden" alt="" draggable="false"><span id="imageViewerMessage" class="image-viewer-message"></span></div><button id="imageViewerNext" class="image-viewer-arrow" type="button" aria-label="الصورة التالية"><svg class="icon"><use href="#i-forward"/></svg></button></div>
+      <div class="image-viewer-foot"><span id="imageViewerMeta"></span><span id="imageViewerHint" class="image-viewer-hint"></span></div>
+    </div>
+  </dialog>
+  <div id="toastStack" class="toast-stack" aria-live="polite"></div>
+
+  <script>
+  'use strict';
+  (() => {
+    const $ = (s, root=document) => root.querySelector(s);
+    const $$ = (s, root=document) => [...root.querySelectorAll(s)];
+    const icon = (name, cls='icon') => `<svg class="${cls}" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+    const escapeHTML = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+    const collator = new Intl.Collator(['ar','en'], {numeric:true, sensitivity:'base'});
+    function formatDate(value){return new Intl.DateTimeFormat(state.lang==='ar'?'ar-IQ':'en-US',{year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(value)}
+    const IMAGE_EXTS = new Set(['png','jpg','jpeg','webp','gif','avif','bmp']);
+    const VIDEO_EXTS = new Set(['mp4','webm','mov','mkv','avi','m4v']);
+    const AUDIO_EXTS = new Set(['mp3','wav','ogg','m4a','flac','aac']);
+    const ARCHIVE_EXTS = new Set(['zip','rar','7z','tar','gz','bz2']);
+    const CODE_EXTS = new Set(['js','ts','jsx','tsx','html','css','json','xml','py','java','c','cpp','cs','php','rb','go','rs','sh','sql','md']);
+    const loadJSON = (key,fallback={}) => {try{return JSON.parse(localStorage.getItem(key))||fallback}catch{return fallback}};
+    const I18N = {
+      ar:{appName:'مِلف',sidebar:'إظهار أو إخفاء الشريط الجانبي',back:'رجوع (Alt+يسار)',forward:'تقدم (Alt+يمين)',up:'مجلد واحد لأعلى (Alt+أعلى)',refresh:'تحديث (F5)',chooseFolder:'اختيار مجلد',chooseRoot:'اختيار المجلد الجذر',newFolder:'مجلد جديد',addFiles:'إضافة ملفات',copy:'نسخ',cut:'قص',paste:'لصق',delete:'حذف',rename:'إعادة تسمية',view:'التبديل بين الشبكة والقائمة',sort:'ترتيب',search:'ابحث في المجلد الجذر',clear:'مسح البحث',help:'دليل الاستخدام',switchLanguage:'English',rootFolder:'المجلد الجذر',notSelected:'لم يتم الاختيار',homeRoot:'الرئيسية / الجذر',lastSession:'آخر جلسة',restorePrevious:'استعادة المجلد السابق',recentFolders:'المجلدات الأخيرة',noRecent:'لا توجد مجلدات بعد',folderTree:'شجرة المجلدات',chooseStart:'اختر مجلدًا للبدء',privacyIntro:'ستبقى ملفاتك على جهازك. لا يقرأ التطبيق أي شيء حتى تختار مجلدًا بنفسك وتمنحه الإذن.',restoreLast:'استعادة آخر مجلد',browserRequired:'يتطلب Google Chrome أو Microsoft Edge حديثًا.',localSupported:'يدعم متصفحك الوصول المحلي. لن يُرفع أي ملف إلى الإنترنت.',contextUnsupported:'هذا السياق لا يدعم File System Access API. افتح الملف مباشرة في Chrome أو Edge حديثًا.',ready:'جاهز',noFolderOpen:'لا يوجد مجلد مفتوح',sortName:'الاسم',sortType:'النوع',sortSize:'الحجم',sortModified:'تاريخ التعديل',ascending:'تصاعدي',descending:'تنازلي',confirm:'موافق',cancel:'إلغاء',close:'إغلاق',folder:'مجلد',file:'ملف',imageType:'صورة {ext}',videoType:'فيديو {ext}',audioType:'صوت {ext}',archiveType:'أرشيف {ext}',fileType:'ملف {ext}',markdownFile:'ملف Markdown',pdfDocument:'مستند PDF',wordDocument:'مستند Word',excelSheet:'جدول Excel',powerPoint:'عرض PowerPoint',textFile:'ملف نصي',folderCount:'{folders} مجلد، {files} ملف',resultCount:'{count} نتيجة',selectedCount:'محدد: {count}',permissionActive:'إذن القراءة والكتابة فعّال',permissionNeeded:'يلزم إذن الوصول',searchIn:'بحث في {name}',emptyFolder:'هذا المجلد فارغ',emptyFolderText:'أنشئ مجلدًا جديدًا أو أضف ملفات من شريط الأدوات.',noResults:'لا توجد نتائج',noResultsText:'لم يُعثر على عنصر يطابق «{query}». جرّب عبارة أقصر أو اسمًا مختلفًا.',open:'فتح',pasteHere:'لصق هنا',pasteInside:'لصق داخل المجلد',autoNamingHere:'التسمية التلقائية هنا',namingRule:'قاعدة التسمية',enabled:'مفعّلة',numberSelection:'ترقيم حسب ترتيب التحديد',deletePermanent:'حذف نهائي',imagesOnly:'الصور فقط',allFiles:'كل الملفات',autoNaming:'التسمية التلقائية',autoNamingFolder:'التسمية التلقائية للمجلد',enableRule:'تفعيل القاعدة لهذا المجلد',applyRuleTo:'تطبيق القاعدة على',optionalPrefix:'بادئة اختيارية',prefixExample:'مثال: page_',startAt:'ابدأ من الرقم',digits:'عدد الخانات',digits1:'بدون أصفار — 0، 1، 2',digits2:'خانتان — 00، 01، 02',digits3:'3 خانات — 000، 001',digits4:'4 خانات — 0000، 0001',digits5:'5 خانات',plainZero:'اكتب الصفر الأول وحده: 0، ثم 01، 02…',namePreview:'معاينة الأسماء',saveRule:'حفظ القاعدة',removeRule:'إزالة القاعدة',batchNumber:'ترقيم العناصر المحددة',previewApply:'معاينة وتطبيق',ruleFolderIntro:'كل ملف جديد يُضاف إلى «{name}» سيأخذ رقمًا تلقائيًا مع الاحتفاظ بامتداده.',batchIntro:'سيُعاد تسمية {count} ملف حسب ترتيب تحديدك لها. أول ملف حددته سيأخذ الرقم الأول.',helpIntroTitle:'رتّب ملفاتك بسرعة وبأمان',helpIntroText:'دليل مختصر للعمليات الأساسية، السحب، والتسمية التلقائية.',gettingStarted:'البدء',stepChoose:'اختر المجلد',stepChooseText:'اضغط «اختيار مجلد» وامنح إذن القراءة والكتابة.',stepBrowse:'تصفح ونظّم',stepBrowseText:'استخدم المسار، الشجرة، البحث، وطريقتي العرض.',stepAutomate:'فعّل القواعد',stepAutomateText:'ضع قاعدة تسمية على أي مجلد لتسمية الملفات الجديدة تلقائيًا.',shortcuts:'اختصارات لوحة المفاتيح',selectAll:'تحديد الكل',newFolderShortcut:'إنشاء مجلد',goUp:'الانتقال لأعلى',dragHelp:'السحب والإفلات',dragHelpText:'اسحب العناصر فوق مجلد لنقلها إليه. إسقاط ملفات من Windows داخل المساحة ينسخها. الصور المصغرة لا تبدأ سحب المتصفح الأصلي.',namingHelp:'التسمية التلقائية',namingHelpText:'اضغط بزر الفأرة الأيمن على مجلد واختر «قاعدة التسمية». يمكنك اختيار البداية وعدد الخانات مثل 0 أو 00 أو 001. لترقيم ملفات موجودة، حددها بـ Ctrl حسب الترتيب المطلوب ثم اختر «ترقيم حسب ترتيب التحديد».',safety:'الأمان',safetyText:'لا يصل التطبيق إلى أي ملف خارج المجلد الذي اخترته. الحذف نهائي ولا يمر بسلة المحذوفات، لذلك يطلب التطبيق تأكيدًا قبل التنفيذ.'},
+      en:{appName:'Melf',sidebar:'Show or hide sidebar',back:'Back (Alt+Left)',forward:'Forward (Alt+Right)',up:'Up one folder (Alt+Up)',refresh:'Refresh (F5)',chooseFolder:'Choose folder',chooseRoot:'Choose root folder',newFolder:'New folder',addFiles:'Add files',copy:'Copy',cut:'Cut',paste:'Paste',delete:'Delete',rename:'Rename',view:'Switch grid/list view',sort:'Sort',search:'Search the root folder',clear:'Clear search',help:'User guide',switchLanguage:'العربية',rootFolder:'Root folder',notSelected:'Not selected',homeRoot:'Home / root',lastSession:'Last session',restorePrevious:'Restore previous folder',recentFolders:'Recent folders',noRecent:'No folders visited yet',folderTree:'Folder tree',chooseStart:'Choose a folder to begin',privacyIntro:'Your files stay on this device. The app reads nothing until you choose a folder and grant access.',restoreLast:'Restore last folder',browserRequired:'Requires a recent Google Chrome or Microsoft Edge.',localSupported:'Local access is supported. No files are uploaded.',contextUnsupported:'This context does not support the File System Access API. Open this file directly in a recent Chrome or Edge.',ready:'Ready',noFolderOpen:'No folder is open',sortName:'Name',sortType:'Type',sortSize:'Size',sortModified:'Date modified',ascending:'Ascending',descending:'Descending',confirm:'Confirm',cancel:'Cancel',close:'Close',folder:'Folder',file:'File',imageType:'{ext} image',videoType:'{ext} video',audioType:'{ext} audio',archiveType:'{ext} archive',fileType:'{ext} file',markdownFile:'Markdown file',pdfDocument:'PDF document',wordDocument:'Word document',excelSheet:'Excel spreadsheet',powerPoint:'PowerPoint presentation',textFile:'Text file',folderCount:'{folders} folders, {files} files',resultCount:'{count} results',selectedCount:'Selected: {count}',permissionActive:'Read and write access granted',permissionNeeded:'Access permission required',searchIn:'Searching in {name}',emptyFolder:'This folder is empty',emptyFolderText:'Create a folder or add files from the toolbar.',noResults:'No results',noResultsText:'Nothing matches “{query}”. Try a shorter or different name.',open:'Open',pasteHere:'Paste here',pasteInside:'Paste into folder',autoNamingHere:'Automatic naming here',namingRule:'Naming rule',enabled:'on',numberSelection:'Number in selection order',deletePermanent:'Delete permanently',imagesOnly:'Images only',allFiles:'All files',autoNaming:'Automatic naming',autoNamingFolder:'Folder automatic naming',enableRule:'Enable this folder rule',applyRuleTo:'Apply rule to',optionalPrefix:'Optional prefix',prefixExample:'Example: page_',startAt:'Start at',digits:'Number width',digits1:'No padding — 0, 1, 2',digits2:'2 digits — 00, 01, 02',digits3:'3 digits — 000, 001',digits4:'4 digits — 0000, 0001',digits5:'5 digits',plainZero:'Keep the first zero plain: 0, then 01, 02…',namePreview:'Name preview',saveRule:'Save rule',removeRule:'Remove rule',batchNumber:'Number selected files',previewApply:'Preview and apply',ruleFolderIntro:'Every new file added to “{name}” will be numbered automatically while keeping its extension.',batchIntro:'These {count} files will be renamed in selection order. The first file selected receives the first number.',helpIntroTitle:'Organize files quickly and safely',helpIntroText:'A short guide to core actions, drag and drop, and automatic naming.',gettingStarted:'Getting started',stepChoose:'Choose a folder',stepChooseText:'Select “Choose folder” and grant read and write access.',stepBrowse:'Browse and organize',stepBrowseText:'Use breadcrumbs, the folder tree, search, and both view modes.',stepAutomate:'Add rules',stepAutomateText:'Attach a naming rule to any folder to name new files automatically.',shortcuts:'Keyboard shortcuts',selectAll:'Select all',newFolderShortcut:'Create folder',goUp:'Go up one folder',dragHelp:'Drag and drop',dragHelpText:'Drop items on a folder to move them. Dropping files from Windows into the workspace copies them. Thumbnails never start the browser’s native image drag.',namingHelp:'Automatic naming',namingHelpText:'Right-click a folder and choose “Naming rule”. Pick the starting number and width, such as 0, 00, or 001. To number existing files, Ctrl-click them in order, then choose “Number in selection order”.',safety:'Safety',safetyText:'The app cannot access files outside the folder you chose. Deletion is permanent and does not use the Recycle Bin, so the app always asks before deleting.'}
+    };
+    Object.assign(I18N.ar,{localFileManager:'مدير الملفات المحلي',newName:'الاسم الجديد',listView:'عرض القائمة',gridView:'عرض الشبكة',endSearch:'إنهاء البحث',expand:'توسيع',dropHere:'إفلات هنا',moveHere:'نقل إلى هذا المجلد',addHere:'إفلات هنا لإضافة الملفات',items:'{count} عناصر',permissionDenied:'لم يتم منح الإذن المطلوب.',missingItem:'لم يعد العنصر موجودًا في هذا المكان.',cannotModify:'لا يمكن تعديل هذا العنصر أو أنه قيد الاستخدام.',invalidOperation:'لا يمكن إتمام العملية في هذا الموقع.',noSpace:'لا توجد مساحة كافية لإتمام العملية.',securityBlocked:'منع المتصفح هذه العملية لأسباب أمنية.',operationFailed:'تعذر إتمام العملية.',unsupportedAccess:'هذه الصفحة لا تملك سياقًا آمنًا يدعم File System Access API. افتح الملف مباشرة في Chrome أو Edge حديث.',permissionExpired:'انتهى إذن الوصول. اختر المجلد أو استعده لمنح الإذن مجددًا.',invalidName:'الاسم غير صالح في Windows.',invalidFolderName:'اسم المجلد غير صالح في Windows.',nameExists:'يوجد عنصر بهذا الاسم بالفعل.',folderNamePrompt:'اكتب اسم المجلد:',creatingFolder:'جارٍ إنشاء المجلد…',folderCreated:'تم إنشاء المجلد.',addingFiles:'جارٍ إضافة الملفات…',filesAdded:'تمت إضافة {count} ملف{rule}.',renaming:'جارٍ إعادة التسمية…',renamed:'تمت إعادة التسمية.',verifyCopyFailed:'فشل التحقق من اكتمال نسخ الملف.',selfMove:'لا يمكن نقل مجلد إلى داخل نفسه.',selfCopy:'لا يمكن نسخ مجلد إلى داخل نفسه.',copySuffix:'نسخة',movedSuffix:'منقول',copiedClipboard:'تم نسخ {count} عنصر إلى الحافظة.',cutClipboard:'تم قص {count} عنصر. اختر الوجهة ثم الصق.',moving:'جارٍ نقل العناصر…',copying:'جارٍ نسخ العناصر…',moveProgress:'نقل {done} من {total}…',copyProgress:'نسخ {done} من {total}…',movedDone:'تم نقل {count} عنصر{rule}.',copiedDone:'تم نسخ {count} عنصر{rule}.',ruleApplied:' مع تطبيق قاعدة التسمية',otherItems:'و{count} عنصر آخر',deletePrompt:'سيتم حذف العناصر نهائيًا، ولن تُنقل إلى سلة المحذوفات:\n{names}{more}\n\nهل تريد المتابعة؟',deleting:'جارٍ الحذف…',deletedDone:'تم حذف {count} عنصر.',searching:'جارٍ البحث…',searchProgress:'جارٍ البحث عن «{query}»…',searchResults:'{count} نتيجة لعبارة «{query}»{capped}',searchLimit:' — تم بلوغ حد البحث',dropInside:'أسقط العناصر داخل مساحة الملفات أو فوق مجلد محدد.',draggingItems:'جارٍ نقل العناصر…',dragAdded:'تمت إضافة {count} عنصر{rule}.',selectOneFile:'حدد ملفًا واحدًا على الأقل.',sameFolderOnly:'يجب أن تكون الملفات المحددة داخل المجلد نفسه.',noImagesSelected:'لا توجد صور ضمن التحديد.',noFilesSelected:'لا توجد ملفات قابلة للترقيم.',confirmNumbering:'تأكيد الترقيم',moreFiles:'… و{count} ملف آخر',numberingPrompt:'سيتم تغيير الأسماء بهذا الترتيب:\n\n{summary}\n\nستبقى امتدادات الملفات كما هي.',numbering:'جارٍ ترقيم الملفات…',numberedDone:'تم ترقيم {count} ملف حسب ترتيب التحديد.',invalidPrefix:'البادئة تحتوي على رمز غير صالح في اسم ملف Windows.',ruleActivated:'تم تفعيل قاعدة التسمية لهذا المجلد.',rulePaused:'تم إيقاف القاعدة مع الاحتفاظ بإعداداتها.',ruleRemoved:'تمت إزالة قاعدة التسمية من المجلد.'});
+    Object.assign(I18N.en,{localFileManager:'Local File Manager',newName:'New name',listView:'List view',gridView:'Grid view',endSearch:'End search',expand:'Expand',dropHere:'Drop here',moveHere:'Move to this folder',addHere:'Drop here to add files',items:'{count} items',permissionDenied:'The required permission was not granted.',missingItem:'This item no longer exists in this location.',cannotModify:'This item cannot be modified or is currently in use.',invalidOperation:'This operation cannot be completed in this location.',noSpace:'There is not enough space to complete this operation.',securityBlocked:'The browser blocked this operation for security reasons.',operationFailed:'The operation could not be completed.',unsupportedAccess:'This page does not have a secure File System Access API context. Open the file directly in a recent Chrome or Edge.',permissionExpired:'Access permission expired. Choose or restore the folder to grant access again.',invalidName:'This is not a valid Windows file name.',invalidFolderName:'This is not a valid Windows folder name.',nameExists:'An item with this name already exists.',folderNamePrompt:'Enter a folder name:',creatingFolder:'Creating folder…',folderCreated:'Folder created.',addingFiles:'Adding files…',filesAdded:'Added {count} files{rule}.',renaming:'Renaming…',renamed:'Renamed successfully.',verifyCopyFailed:'Could not verify that the file was copied completely.',selfMove:'A folder cannot be moved inside itself.',selfCopy:'A folder cannot be copied inside itself.',copySuffix:'copy',movedSuffix:'moved',copiedClipboard:'Copied {count} items to the clipboard.',cutClipboard:'Cut {count} items. Choose a destination, then paste.',moving:'Moving items…',copying:'Copying items…',moveProgress:'Moving {done} of {total}…',copyProgress:'Copying {done} of {total}…',movedDone:'Moved {count} items{rule}.',copiedDone:'Copied {count} items{rule}.',ruleApplied:' with the naming rule applied',otherItems:'and {count} more items',deletePrompt:'These items will be deleted permanently and will not go to the Recycle Bin:\n{names}{more}\n\nDo you want to continue?',deleting:'Deleting…',deletedDone:'Deleted {count} items.',searching:'Searching…',searchProgress:'Searching for “{query}”…',searchResults:'{count} results for “{query}”{capped}',searchLimit:' — search limit reached',dropInside:'Drop items inside the file area or on a destination folder.',draggingItems:'Moving items…',dragAdded:'Added {count} items{rule}.',selectOneFile:'Select at least one file.',sameFolderOnly:'Selected files must be in the same folder.',noImagesSelected:'No images are included in the selection.',noFilesSelected:'There are no files to number.',confirmNumbering:'Confirm numbering',moreFiles:'… and {count} more files',numberingPrompt:'Names will change in this order:\n\n{summary}\n\nFile extensions will be preserved.',numbering:'Numbering files…',numberedDone:'Numbered {count} files in selection order.',invalidPrefix:'The prefix contains a character that is invalid in a Windows file name.',ruleActivated:'The naming rule is active for this folder.',rulePaused:'The rule is paused and its settings were kept.',ruleRemoved:'The naming rule was removed from this folder.'});
+    Object.assign(I18N.ar,{folderNavigation:'التنقل بين المجلدات',pathLabel:'المسار',fileAreaLabel:'الملفات والمجلدات'});
+    Object.assign(I18N.en,{folderNavigation:'Folder navigation',pathLabel:'Path',fileAreaLabel:'Files and folders'});
+    Object.assign(I18N.ar,{appName:'Filerra'});
+    Object.assign(I18N.en,{appName:'Filerra'});
+    Object.assign(I18N.ar,{imagePreview:'معاينة الصورة',previousImage:'الصورة السابقة',nextImage:'الصورة التالية',loadingImage:'جارٍ فتح الصورة…',imageOpenFailed:'تعذر عرض هذه الصورة.',viewerHint:'استخدم الأسهم للتنقل وEsc للإغلاق.',previewHelp:'انقر مرتين على الصورة لعرضها داخل التطبيق. استخدم الأسهم للانتقال بين الصور، ثم Esc للإغلاق.'});
+    Object.assign(I18N.en,{imagePreview:'Image preview',previousImage:'Previous image',nextImage:'Next image',loadingImage:'Opening image…',imageOpenFailed:'This image could not be displayed.',viewerHint:'Use arrow keys to browse and Esc to close.',previewHelp:'Double-click an image to preview it in the app. Use the arrows to browse, then Esc to close.'});
+    function t(key,vars={}){const value=I18N[state?.lang||localStorage.getItem('melf-lang')||'ar']?.[key]??I18N.ar[key]??key;return String(value).replace(/\{(\w+)\}/g,(_,name)=>vars[name]??'')}
+    const state = {
+      rootHandle:null, currentHandle:null, path:[], items:[], selected:new Set(), selectionOrder:[], anchorIndex:-1,
+      history:[], historyIndex:-1, view:localStorage.getItem('melf-view') || 'grid',
+      sort:{key:localStorage.getItem('melf-sort') || 'name', direction:localStorage.getItem('melf-dir') || 'asc'},
+      clipboard:null, renameId:null, busy:false, searchQuery:'', searchController:null, searchScanned:0,
+      recents:[], treeRoot:null, treeNodes:new Map(), dragEntries:null, lastDragEnd:0, thumbUrls:new Map(), thumbObserver:null, thumbJobs:[], thumbActive:0, thumbGeneration:0,
+      imageViewer:{entries:[],index:0,url:null,request:0},
+      restoredHandle:null, namingRules:loadJSON('melf-naming-rules',{}), namingContext:null, lang:localStorage.getItem('melf-lang')==='en'?'en':'ar'
+    };
+
+    const els = {
+      app:$('#app'), fileArea:$('#fileArea'), fileViewport:$('#fileViewport'), empty:$('#emptyState'), breadcrumbs:$('#breadcrumbs'),
+      rootName:$('#rootName'), recentList:$('#recentList'), folderTree:$('#folderTree'), locationMeta:$('#locationMeta'),
+      itemStatus:$('#itemStatus'), selectionStatus:$('#selectionStatus'), taskStatus:$('#taskStatus'), permissionStatus:$('#permissionStatus'),
+      search:$('#searchInput'), searchClear:$('#searchClear'), searchBanner:$('#searchBanner'), searchBannerText:$('#searchBannerText'),
+      sortMenu:$('#sortMenu'), contextMenu:$('#contextMenu'), modal:$('#modal'), modalForm:$('#modalForm'), modalTitle:$('#modalTitle'),
+      modalMessage:$('#modalMessage'), modalInput:$('#modalInput'), modalConfirm:$('#modalConfirm'), modalIcon:$('#modalIcon'),
+      restoreSection:$('#restoreSection'), restoreName:$('#restoreName'), restoreBtn:$('#restoreBtn'), emptyRestoreBtn:$('#emptyRestoreBtn'),
+      namingDialog:$('#namingDialog'), namingForm:$('#namingForm'), namingTitle:$('#namingTitle'), namingIntro:$('#namingIntro'),
+      namingEnabled:$('#namingEnabled'), namingEnabledRow:$('#namingEnabledRow'), namingScope:$('#namingScope'), namingPrefix:$('#namingPrefix'),
+      namingStart:$('#namingStart'), namingPadding:$('#namingPadding'), namingPlainZero:$('#namingPlainZero'), namingPreview:$('#namingPreview'), namingRemove:$('#namingRemove'), namingSave:$('#namingSave'),
+      langBtn:$('#langBtn'), langLabel:$('#langLabel'), helpBtn:$('#helpBtn'), helpDialog:$('#helpDialog'), helpTitle:$('#helpTitle'), helpBody:$('#helpBody'),
+      imageDialog:$('#imageDialog'), imageViewerTitle:$('#imageViewerTitle'), imageViewerCounter:$('#imageViewerCounter'), imageViewerClose:$('#imageViewerClose'), imageViewerPrev:$('#imageViewerPrev'), imageViewerNext:$('#imageViewerNext'), imageViewerImage:$('#imageViewerImage'), imageViewerMessage:$('#imageViewerMessage'), imageViewerMeta:$('#imageViewerMeta'), imageViewerHint:$('#imageViewerHint')
+    };
+
+    function replaceOwnText(element,value){if(!element)return;const node=[...element.childNodes].find(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim());if(node)node.textContent=`${value} `;else element.append(document.createTextNode(value))}
+    function setControlText(selector,key){replaceOwnText($(selector),t(key))}
+    function renderHelp(){
+      els.helpTitle.textContent=t('help');
+      els.helpBody.innerHTML=`
+        <div class="help-hero"><svg class="help-hero-icon"><use href="#i-folder"/></svg><div><h2>${escapeHTML(t('helpIntroTitle'))}</h2><p>${escapeHTML(t('helpIntroText'))}</p></div></div>
+        <section class="help-section"><h3>${escapeHTML(t('gettingStarted'))}</h3><div class="help-steps">
+          <div class="help-step"><span class="help-step-number">1</span><strong>${escapeHTML(t('stepChoose'))}</strong><span>${escapeHTML(t('stepChooseText'))}</span></div>
+          <div class="help-step"><span class="help-step-number">2</span><strong>${escapeHTML(t('stepBrowse'))}</strong><span>${escapeHTML(t('stepBrowseText'))}</span></div>
+          <div class="help-step"><span class="help-step-number">3</span><strong>${escapeHTML(t('stepAutomate'))}</strong><span>${escapeHTML(t('stepAutomateText'))}</span></div>
+        </div></section>
+        <section class="help-section"><h3>${escapeHTML(t('shortcuts'))}</h3><div class="shortcut-list">
+          <div class="shortcut-row"><span>${escapeHTML(t('rename'))}</span><span class="keys"><kbd>F2</kbd></span></div>
+          <div class="shortcut-row"><span>${escapeHTML(t('copy'))} / ${escapeHTML(t('cut'))} / ${escapeHTML(t('paste'))}</span><span class="keys"><kbd>Ctrl</kbd><kbd>C</kbd><kbd>X</kbd><kbd>V</kbd></span></div>
+          <div class="shortcut-row"><span>${escapeHTML(t('selectAll'))}</span><span class="keys"><kbd>Ctrl</kbd><kbd>A</kbd></span></div>
+          <div class="shortcut-row"><span>${escapeHTML(t('newFolderShortcut'))}</span><span class="keys"><kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>N</kbd></span></div>
+          <div class="shortcut-row"><span>${escapeHTML(t('goUp'))}</span><span class="keys"><kbd>Alt</kbd><kbd>↑</kbd></span></div>
+          <div class="shortcut-row"><span>${escapeHTML(t('delete'))}</span><span class="keys"><kbd>Delete</kbd></span></div>
+        </div></section>
+        <section class="help-section"><h3>${escapeHTML(t('dragHelp'))}</h3><div class="help-note">${escapeHTML(t('dragHelpText'))}</div></section>
+        <section class="help-section"><h3>${escapeHTML(t('imagePreview'))}</h3><div class="help-note">${escapeHTML(t('previewHelp'))}</div></section>
+        <section class="help-section"><h3>${escapeHTML(t('namingHelp'))}</h3><div class="help-note">${escapeHTML(t('namingHelpText'))}</div></section>
+        <section class="help-section"><h3>${escapeHTML(t('safety'))}</h3><div class="help-note">${escapeHTML(t('safetyText'))}</div></section>`;
+    }
+    function applyLanguage({rerender=true}={}){
+      const isArabic=state.lang==='ar';document.documentElement.lang=state.lang;document.documentElement.dir=isArabic?'rtl':'ltr';document.title=`${t('appName')} — ${t('localFileManager')}`;
+      $('.brand span').textContent=t('appName');els.langLabel.textContent=isArabic?'EN':'AR';els.langBtn.title=t('switchLanguage');els.langBtn.setAttribute('aria-label',t('switchLanguage'));els.helpBtn.title=t('help');els.helpBtn.setAttribute('aria-label',t('help'));
+      const titles={sidebarToggle:'sidebar',backBtn:'back',forwardBtn:'forward',upBtn:'up',refreshBtn:'refresh',chooseRootBtn:'chooseRoot',newFolderBtn:'newFolder',addFilesBtn:'addFiles',copyBtn:'copy',cutBtn:'cut',pasteBtn:'paste',deleteBtn:'delete',renameBtn:'rename',viewBtn:'view',sortBtn:'sort'};
+      for(const [id,key] of Object.entries(titles)){const el=$(`#${id}`);if(el){el.title=t(key);el.setAttribute('aria-label',t(key))}}
+      const labels={chooseRootBtn:'chooseFolder',newFolderBtn:'newFolder',addFilesBtn:'addFiles',copyBtn:'copy',cutBtn:'cut',pasteBtn:'paste',deleteBtn:'delete',renameBtn:'rename'};for(const [id,key] of Object.entries(labels)){const label=$(`#${id} .tool-label`);if(label)label.textContent=t(key)}
+      els.search.placeholder=t('search');els.search.setAttribute('aria-label',t('search'));els.searchClear.title=t('clear');els.searchClear.setAttribute('aria-label',t('clear'));$('#cancelSearch').textContent=t('endSearch');els.breadcrumbs.setAttribute('aria-label',t('pathLabel'));els.fileViewport.setAttribute('aria-label',t('fileAreaLabel'));$('.sidebar').setAttribute('aria-label',t('folderNavigation'));$('.brand').setAttribute('aria-label',t('appName'));
+      $('.root-label').textContent=t('rootFolder');if(!state.rootHandle){els.rootName.textContent=t('notSelected');els.rootName.title=t('notSelected')}
+      $('#homeLink span').textContent=t('homeRoot');$('.side-heading',els.restoreSection).textContent=t('lastSession');if(!state.restoredHandle)els.restoreName.textContent=t('restorePrevious');
+      const headings=$$('.side-heading span');if(headings[0])headings[0].textContent=t('recentFolders');if(headings[1])headings[1].textContent=t('folderTree');
+      setControlText('[data-sort="name"]','sortName');setControlText('[data-sort="type"]','sortType');setControlText('[data-sort="size"]','sortSize');setControlText('[data-sort="modified"]','sortModified');setControlText('[data-direction="asc"]','ascending');setControlText('[data-direction="desc"]','descending');
+      const modalButtons=$$('#modal .dialog-actions button');if(modalButtons[0])modalButtons[0].textContent=t('confirm');if(modalButtons[1])modalButtons[1].textContent=t('cancel');
+      els.namingTitle.textContent=t('autoNaming');els.namingEnabled.nextElementSibling.textContent=t('enableRule');els.namingScope.previousElementSibling.textContent=t('applyRuleTo');els.namingScope.options[0].textContent=t('imagesOnly');els.namingScope.options[1].textContent=t('allFiles');els.namingPrefix.previousElementSibling.textContent=t('optionalPrefix');els.namingPrefix.placeholder=t('prefixExample');els.namingStart.previousElementSibling.textContent=t('startAt');els.namingPadding.previousElementSibling.textContent=t('digits');['digits1','digits2','digits3','digits4','digits5'].forEach((key,i)=>els.namingPadding.options[i].textContent=t(key));els.namingPlainZero.nextElementSibling.textContent=t('plainZero');$('.naming-preview-label').textContent=t('namePreview');els.namingSave.textContent=t('saveRule');els.namingRemove.textContent=t('removeRule');const namingCancel=$('#namingDialog .dialog-actions button[value="cancel"]');if(namingCancel)namingCancel.textContent=t('cancel');
+      const helpClose=$('#helpDialog [data-i18n="close"]');if(helpClose)helpClose.textContent=t('close');renderHelp();renderRecents();
+      els.imageDialog.setAttribute('aria-label',t('imagePreview'));els.imageViewerClose.title=t('close');els.imageViewerClose.setAttribute('aria-label',t('close'));els.imageViewerPrev.title=t('previousImage');els.imageViewerPrev.setAttribute('aria-label',t('previousImage'));els.imageViewerNext.title=t('nextImage');els.imageViewerNext.setAttribute('aria-label',t('nextImage'));els.imageViewerHint.textContent=t('viewerHint');
+      if(!state.rootHandle){const card=$('#emptyState .empty-card');if(card){const h1=$('h1',card),paragraphs=$$('p',card);if(h1)h1.textContent=t('chooseStart');if(paragraphs[0])paragraphs[0].textContent=t('privacyIntro');const choose=$('#emptyChooseBtn');if(choose)replaceOwnText(choose,t('chooseRoot'));const restore=$('#emptyRestoreBtn');if(restore)replaceOwnText(restore,t('restoreLast'));if(paragraphs.at(-1))paragraphs.at(-1).textContent=window.isSecureContext&&'showDirectoryPicker' in window?t('localSupported'):t('contextUnsupported')}els.itemStatus.textContent=t('ready');els.permissionStatus.lastElementChild.textContent=t('noFolderOpen')}
+      else if(rerender){render();renderBreadcrumbs();updateStatuses();renderTree()}
+      $('#viewBtn').title=state.view==='grid'?t('listView'):t('gridView');
+    }
+
+    function setButtonStates(){
+      const hasRoot=!!state.rootHandle, count=state.selected.size;
+      $('#backBtn').disabled=!hasRoot || state.historyIndex<=0 || state.busy;
+      $('#forwardBtn').disabled=!hasRoot || state.historyIndex>=state.history.length-1 || state.busy;
+      $('#upBtn').disabled=!hasRoot || state.path.length===0 || state.busy;
+      $('#refreshBtn').disabled=!hasRoot || state.busy;
+      $('#newFolderBtn').disabled=!hasRoot || state.busy || !!state.searchQuery;
+      $('#addFilesBtn').disabled=!hasRoot || state.busy || !!state.searchQuery;
+      $('#copyBtn').disabled=!count || state.busy;
+      $('#cutBtn').disabled=!count || state.busy;
+      $('#pasteBtn').disabled=!hasRoot || !state.clipboard?.entries?.length || state.busy || !!state.searchQuery;
+      $('#deleteBtn').disabled=!count || state.busy;
+      $('#renameBtn').disabled=count!==1 || state.busy;
+      $('#viewBtn').disabled=!hasRoot;
+      $('#sortBtn').disabled=!hasRoot;
+      els.search.disabled=!hasRoot;
+      $('#homeLink').disabled=!hasRoot;
+      $('#chooseRootBtn').disabled=state.busy;
+    }
+
+    function setBusy(value,label=''){
+      state.busy=value; document.body.classList.toggle('busy',value); els.taskStatus.textContent=value?label:''; setButtonStates();
+    }
+    async function withBusy(label,fn){
+      if(state.busy) return;
+      setBusy(true,label);
+      try{return await fn()} catch(err){handleError(err,label); throw err} finally{setBusy(false)}
+    }
+    function handleError(err,context=''){
+      if(err?.name==='AbortError') return;
+      console.error(context,err);
+      const map={NotAllowedError:t('permissionDenied'),NotFoundError:t('missingItem'),NoModificationAllowedError:t('cannotModify'),InvalidModificationError:t('invalidOperation'),QuotaExceededError:t('noSpace'),SecurityError:t('securityBlocked')};
+      toast(map[err?.name] || err?.message || t('operationFailed'), 'error');
+    }
+    function toast(message,type='info',duration=4200){
+      const el=document.createElement('div'); el.className=`toast ${type}`;
+      el.innerHTML=`${icon(type==='error'?'warning':type==='success'?'check':'info')}<div class="toast-text">${escapeHTML(message)}</div>`;
+      $('#toastStack').append(el); setTimeout(()=>el.remove(),duration);
+    }
+
+    function formatSize(bytes){
+      if(bytes==null) return '—';const units=state.lang==='ar'?['بايت','ك.ب','م.ب','ج.ب','ت.ب']:['bytes','KB','MB','GB','TB'];if(bytes===0)return `0 ${units[0]}`;
+      const i=Math.min(Math.floor(Math.log(bytes)/Math.log(1024)),4);
+      return `${new Intl.NumberFormat(state.lang==='ar'?'ar-IQ':'en-US',{maximumFractionDigits:i?1:0}).format(bytes/1024**i)} ${units[i]}`;
+    }
+    function extOf(name){const i=name.lastIndexOf('.'); return i>0?name.slice(i+1).toLowerCase():''}
+    function pathKey(path){return path.join('\u0001')}
+    function itemId(path,name){return `${pathKey(path)}\u0002${name}`}
+    function isPrefix(prefix,path){return prefix.length<=path.length && prefix.every((p,i)=>p===path[i])}
+    function fileKind(entry){
+      if(entry.kind==='directory') return {label:t('folder'),icon:'folder',color:'#649af1',badge:''};
+      const ext=entry.ext||extOf(entry.name);
+      if(IMAGE_EXTS.has(ext)) return {label:t('imageType',{ext:ext.toUpperCase()}),icon:'image',color:'#9d78e8',badge:ext};
+      if(VIDEO_EXTS.has(ext)) return {label:t('videoType',{ext:ext.toUpperCase()}),icon:'video',color:'#e36f8f',badge:ext};
+      if(AUDIO_EXTS.has(ext)) return {label:t('audioType',{ext:ext.toUpperCase()}),icon:'audio',color:'#d78b55',badge:ext};
+      if(ARCHIVE_EXTS.has(ext)) return {label:t('archiveType',{ext:ext.toUpperCase()}),icon:'archive',color:'#d4a24c',badge:ext};
+      if(CODE_EXTS.has(ext)) return {label:ext==='md'?t('markdownFile'):t('fileType',{ext:ext.toUpperCase()}),icon:'code',color:'#5db7a5',badge:ext};
+      const labels={pdf:t('pdfDocument'),doc:t('wordDocument'),docx:t('wordDocument'),xls:t('excelSheet'),xlsx:t('excelSheet'),ppt:t('powerPoint'),pptx:t('powerPoint'),txt:t('textFile')};
+      return {label:labels[ext] || (ext?t('fileType',{ext:ext.toUpperCase()}):t('file')),icon:'file',color:ext==='pdf'?'#d96161':'#8294ad',badge:ext};
+    }
+    function compareItems(a,b){
+      if(a.kind!==b.kind) return a.kind==='directory'?-1:1;
+      let v=0; const k=state.sort.key;
+      if(k==='name') v=collator.compare(a.name,b.name);
+      else if(k==='type') v=collator.compare(fileKind(a).label,fileKind(b).label) || collator.compare(a.name,b.name);
+      else if(k==='size') v=(a.size||0)-(b.size||0) || collator.compare(a.name,b.name);
+      else if(k==='modified') v=(a.modified||0)-(b.modified||0) || collator.compare(a.name,b.name);
+      return state.sort.direction==='asc'?v:-v;
+    }
+
+    async function openDB(){
+      return new Promise((resolve,reject)=>{const req=indexedDB.open('melf-local-manager',1);req.onupgradeneeded=()=>req.result.createObjectStore('handles');req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});
+    }
+    async function saveRootHandle(handle){try{const db=await openDB();const tx=db.transaction('handles','readwrite');tx.objectStore('handles').put({handle,name:handle.name},'lastRoot');await new Promise((r,j)=>{tx.oncomplete=r;tx.onerror=()=>j(tx.error)});db.close()}catch(e){console.warn('Could not persist handle',e)}}
+    async function loadSavedHandle(){
+      try{const db=await openDB();const tx=db.transaction('handles','readonly');const req=tx.objectStore('handles').get('lastRoot');const val=await new Promise((r,j)=>{req.onsuccess=()=>r(req.result);req.onerror=()=>j(req.error)});db.close();return val}catch{return null}
+    }
+    async function ensurePermission(handle,ask=true){
+      if(!handle?.queryPermission) return true;
+      const opts={mode:'readwrite'}; if(await handle.queryPermission(opts)==='granted') return true;
+      return ask && await handle.requestPermission(opts)==='granted';
+    }
+    async function chooseRoot(){
+      if(!window.isSecureContext||!('showDirectoryPicker' in window)){toast(t('unsupportedAccess'), 'error',7000);return}
+      try{
+        const handle=await window.showDirectoryPicker({mode:'readwrite',startIn:'documents'});
+        if(!await ensurePermission(handle,true)) return;
+        await activateRoot(handle);
+        await saveRootHandle(handle);
+      }catch(e){if(e.name!=='AbortError')handleError(e,'اختيار المجلد')}
+    }
+    async function restoreRoot(){
+      if(!state.restoredHandle) return;
+      try{if(!await ensurePermission(state.restoredHandle,true)){toast(t('permissionNeeded'),'error');return}await activateRoot(state.restoredHandle)}catch(e){handleError(e,t('restorePrevious'))}
+    }
+    async function activateRoot(handle){
+      revokeThumbnails();
+      state.rootHandle=handle;state.currentHandle=handle;state.path=[];state.items=[];clearSelection();state.history=[[]];state.historyIndex=0;state.searchQuery='';els.search.value='';
+      state.treeRoot={id:'root',name:handle.name,handle,path:[],loaded:false,expanded:true,children:[]};state.treeNodes=new Map([['root',state.treeRoot]]);
+      els.rootName.textContent=handle.name;els.rootName.title=handle.name;$('#chooseRootBtn').classList.remove('primary');
+      els.empty.classList.add('hidden'); $('#homeLink').classList.add('active');
+      await refresh({reveal:true}); updatePermission(true); renderRecents(); setButtonStates();
+    }
+    function updatePermission(ok){els.permissionStatus.classList.toggle('ok',ok);els.permissionStatus.lastElementChild.textContent=t(ok?'permissionActive':'permissionNeeded')}
+
+    async function resolveDirectory(path){let h=state.rootHandle;for(const name of path)h=await h.getDirectoryHandle(name);return h}
+    async function navigate(path,{history=true}={}){
+      if(!state.rootHandle||state.busy)return;
+      try{
+        state.searchQuery='';els.search.value='';els.searchClear.classList.remove('visible');els.searchBanner.classList.add('hidden');
+        const handle=await resolveDirectory(path);state.currentHandle=handle;state.path=[...path];clearSelection();state.anchorIndex=-1;
+        if(history){state.history=state.history.slice(0,state.historyIndex+1);state.history.push([...path]);state.historyIndex=state.history.length-1}
+        addRecent(handle,path);await refresh({reveal:true});els.fileViewport.scrollTop=0;
+      }catch(e){handleError(e,'فتح المجلد')}
+    }
+    async function goHistory(delta){const next=state.historyIndex+delta;if(next<0||next>=state.history.length)return;state.historyIndex=next;await navigate(state.history[next],{history:false})}
+    function releaseImageViewer(){
+      state.imageViewer.request++;els.imageViewerImage.onload=null;els.imageViewerImage.onerror=null;els.imageViewerImage.removeAttribute('src');els.imageViewerImage.classList.add('hidden');if(state.imageViewer.url)URL.revokeObjectURL(state.imageViewer.url);state.imageViewer.url=null;
+    }
+    function closeImageViewer(){if(els.imageDialog.open)els.imageDialog.close();else releaseImageViewer()}
+    async function renderImageViewer(){
+      releaseImageViewer();const viewer=state.imageViewer,entry=viewer.entries[viewer.index],request=viewer.request;if(!entry)return;
+      els.imageViewerTitle.textContent=entry.name;els.imageViewerCounter.textContent=`${viewer.index+1} / ${viewer.entries.length}`;els.imageViewerPrev.disabled=viewer.index===0;els.imageViewerNext.disabled=viewer.index===viewer.entries.length-1;els.imageViewerMeta.textContent='';els.imageViewerMessage.textContent=t('loadingImage');els.imageViewerMessage.classList.remove('hidden');
+      try{
+        const file=await entry.handle.getFile();if(request!==viewer.request||!els.imageDialog.open)return;
+        const url=URL.createObjectURL(file);viewer.url=url;
+        els.imageViewerImage.onload=()=>{if(request!==viewer.request)return;els.imageViewerMessage.classList.add('hidden');els.imageViewerImage.classList.remove('hidden');els.imageViewerMeta.textContent=`${formatSize(file.size)} · ${els.imageViewerImage.naturalWidth} × ${els.imageViewerImage.naturalHeight}`};
+        els.imageViewerImage.onerror=()=>{if(request!==viewer.request)return;els.imageViewerImage.onload=null;els.imageViewerImage.onerror=null;els.imageViewerImage.removeAttribute('src');URL.revokeObjectURL(url);viewer.url=null;els.imageViewerMessage.textContent=t('imageOpenFailed')};
+        els.imageViewerImage.src=url;
+      }catch(error){if(request===viewer.request){console.error('Image preview failed',error);els.imageViewerMessage.textContent=t('imageOpenFailed')}}
+    }
+    function openImageViewer(entry){
+      const images=state.items.filter(item=>item.kind==='file'&&IMAGE_EXTS.has(item.ext));state.imageViewer.entries=images;state.imageViewer.index=Math.max(0,images.findIndex(item=>item.id===entry.id));if(!els.imageDialog.open)els.imageDialog.showModal();renderImageViewer()
+    }
+    function stepImageViewer(direction){const next=state.imageViewer.index+direction;if(next<0||next>=state.imageViewer.entries.length)return;state.imageViewer.index=next;renderImageViewer()}
+    async function openItem(entry){
+      if(entry.kind==='directory'){await navigate([...entry.parentPath,entry.name]);return}
+      if(IMAGE_EXTS.has(entry.ext)){openImageViewer(entry);return}
+      try{const file=await entry.handle.getFile();const url=URL.createObjectURL(file);const win=window.open(url,'_blank','noopener');if(!win){const a=document.createElement('a');a.href=url;a.download=file.name;a.click()}setTimeout(()=>URL.revokeObjectURL(url),120000)}catch(e){handleError(e,'فتح الملف')}
+    }
+    function addRecent(handle,path){
+      if(!path.length)return;const key=pathKey(path);state.recents=state.recents.filter(x=>x.key!==key);state.recents.unshift({key,handle,path:[...path],name:path.at(-1)});state.recents=state.recents.slice(0,7);renderRecents()
+    }
+    function renderRecents(){
+      els.recentList.innerHTML=state.recents.length?state.recents.map((r,i)=>`<button class="recent-link" data-recent="${i}" title="${escapeHTML(r.path.join(' > '))}">${icon('clock')}<span dir="auto">${escapeHTML(r.name)}</span></button>`).join(''):`<div style="padding:6px 9px;color:#667386;font-size:12px">${escapeHTML(t('noRecent'))}</div>`;
+      $$('[data-recent]',els.recentList).forEach(b=>b.onclick=()=>navigate(state.recents[+b.dataset.recent].path));
+    }
+
+    async function mapLimit(values,limit,worker){const out=new Array(values.length);let next=0;async function run(){while(next<values.length){const i=next++;out[i]=await worker(values[i],i)}}await Promise.all(Array.from({length:Math.min(limit,values.length)},run));return out}
+    async function readDirectory(handle,path){
+      const raw=[];for await(const [name,h] of handle.entries())raw.push({name,handle:h,kind:h.kind});
+      return mapLimit(raw,12,async r=>{
+        const e={...r,parentHandle:handle,parentPath:[...path],id:itemId(path,r.name),ext:extOf(r.name),size:null,modified:null,mime:''};
+        if(r.kind==='file'){try{const f=await r.handle.getFile();e.size=f.size;e.modified=f.lastModified;e.mime=f.type}catch{}}
+        return e;
+      });
+    }
+    async function refresh({reveal=false}={}){
+      if(!state.currentHandle)return;
+      if(!await ensurePermission(state.rootHandle,false)){updatePermission(false);toast(t('permissionExpired'),'error');return}
+      try{
+        revokeThumbnails(); state.items=(await readDirectory(state.currentHandle,state.path)).sort(compareItems);clearSelection();state.renameId=null;
+        render();renderBreadcrumbs();updateStatuses();if(reveal)await revealTreePath(state.path);else renderTree();updatePermission(true)
+      }catch(e){handleError(e,'تحديث المجلد')}
+    }
+
+    function renderBreadcrumbs(){
+      if(!state.rootHandle){els.breadcrumbs.innerHTML='';return}
+      const segments=[state.rootHandle.name,...state.path];
+      els.breadcrumbs.innerHTML=segments.map((s,i)=>`${i?`<svg class="icon crumb-sep"><use href="#i-chevron"/></svg>`:''}<button class="crumb" data-depth="${i}" title="${escapeHTML(s)}"><span dir="auto">${escapeHTML(s)}</span></button>`).join('');
+      $$('[data-depth]',els.breadcrumbs).forEach(b=>b.onclick=()=>navigate(state.path.slice(0,+b.dataset.depth)));
+      requestAnimationFrame(()=>{els.breadcrumbs.scrollLeft=els.breadcrumbs.scrollWidth});
+    }
+    function visualHTML(entry,details=false){
+      const type=fileKind(entry),thumb=entry.kind==='file'&&IMAGE_EXTS.has(entry.ext);
+      if(thumb)return `<img class="file-thumb lazy-thumb" data-thumb="${escapeHTML(entry.id)}" alt="" decoding="async" draggable="false">`;
+      return `<svg class="${entry.kind==='directory'?'folder-icon':'file-icon'}" style="color:${type.color}"><use href="#i-${type.icon}"/></svg>${!details&&type.badge&&entry.kind==='file'?`<span class="type-badge">${escapeHTML(type.badge.slice(0,5))}</span>`:''}`;
+    }
+    function nameHTML(entry){
+      if(state.renameId===entry.id)return `<input class="rename-input" value="${escapeHTML(entry.name)}" aria-label="${escapeHTML(t('newName'))}" dir="auto">`;
+      return `<span class="item-name" dir="auto" title="${escapeHTML(entry.name)}">${escapeHTML(entry.name)}</span>`;
+    }
+    function selectionMarker(id){const index=state.selectionOrder.indexOf(id);return index>=0?String(index+1):icon('check')}
+    function render(){
+      if(!state.rootHandle){els.fileArea.innerHTML='';return}
+      const items=[...state.items].sort(compareItems);state.items=items;
+      const cutIds=new Set(state.clipboard?.mode==='cut'?state.clipboard.entries.map(e=>e.id):[]);
+      if(state.view==='grid'){
+        els.fileArea.className='file-grid';
+        els.fileArea.innerHTML=items.map(e=>`<div class="file-item ${state.selected.has(e.id)?'selected':''} ${cutIds.has(e.id)?'cut':''}" data-id="${escapeHTML(e.id)}" draggable="true" role="option" aria-selected="${state.selected.has(e.id)}" title="${escapeHTML(e.name)}"><span class="selection-check">${selectionMarker(e.id)}</span><div class="item-visual">${visualHTML(e)}</div>${nameHTML(e)}</div>`).join('');
+      }else{
+        els.fileArea.className='details-view';
+        els.fileArea.innerHTML=`<div class="details-head"><button data-head-sort="name">${escapeHTML(t('sortName'))}</button><button data-head-sort="type">${escapeHTML(t('sortType'))}</button><button data-head-sort="size">${escapeHTML(t('sortSize'))}</button><button data-head-sort="modified">${escapeHTML(t('sortModified'))}</button></div>${items.map(e=>{const type=fileKind(e);return `<div class="details-row file-item ${state.selected.has(e.id)?'selected':''} ${cutIds.has(e.id)?'cut':''}" data-id="${escapeHTML(e.id)}" draggable="true" role="option" aria-selected="${state.selected.has(e.id)}" title="${escapeHTML(e.name)}"><span class="selection-check">${selectionMarker(e.id)}</span><div class="details-name">${visualHTML(e,true)}${nameHTML(e)}</div><div class="detail-cell">${escapeHTML(type.label)}</div><div class="detail-cell">${e.kind==='directory'?'—':formatSize(e.size)}</div><div class="detail-cell">${e.modified?formatDate(e.modified):'—'}</div></div>`}).join('')}`;
+      }
+      bindItems();observeThumbnails();
+      if(state.renameId)requestAnimationFrame(focusRename);
+      const trulyEmpty=items.length===0 && !state.searchQuery;
+      if(trulyEmpty){els.empty.classList.remove('hidden');els.empty.innerHTML=`<div class="empty-card"><svg class="empty-visual"><use href="#i-folder"/></svg><h1>${escapeHTML(t('emptyFolder'))}</h1><p>${escapeHTML(t('emptyFolderText'))}</p><div class="empty-actions"><button id="inlineNewFolder" class="tool-button primary">${icon('folder-plus')}${escapeHTML(t('newFolder'))}</button><button id="inlineAddFiles" class="tool-button">${icon('upload')}${escapeHTML(t('addFiles'))}</button></div></div>`;$('#inlineNewFolder').onclick=createFolder;$('#inlineAddFiles').onclick=addFiles}
+      else if(items.length===0&&state.searchQuery){els.empty.classList.remove('hidden');els.empty.innerHTML=`<div class="empty-card"><svg class="empty-visual"><use href="#i-search"/></svg><h1>${escapeHTML(t('noResults'))}</h1><p>${escapeHTML(t('noResultsText',{query:state.searchQuery}))}</p></div>`}
+      else els.empty.classList.add('hidden');
+      setButtonStates();updateStatuses();
+    }
+    function bindItems(){
+      $$('.file-item',els.fileArea).forEach(el=>{
+        el.addEventListener('click',onItemClick);el.addEventListener('dblclick',onItemDoubleClick);el.addEventListener('contextmenu',onItemContext);
+        el.addEventListener('dragstart',onDragStart);el.addEventListener('dragend',clearDragStyles);el.addEventListener('dragover',onItemDragOver);el.addEventListener('dragleave',()=>el.classList.remove('drop-target'));el.addEventListener('drop',onItemDrop);
+      });
+      $$('[data-head-sort]',els.fileArea).forEach(b=>b.onclick=()=>setSort(b.dataset.headSort));
+    }
+    function entryById(id){return state.items.find(e=>e.id===id)}
+    function clearSelection(){state.selected.clear();state.selectionOrder=[]}
+    function selectedEntries(){return state.items.filter(e=>state.selected.has(e.id))}
+    function selectedEntriesInOrder(){const byId=new Map(state.items.map(e=>[e.id,e]));const ordered=state.selectionOrder.map(id=>byId.get(id)).filter(Boolean);for(const entry of state.items)if(state.selected.has(entry.id)&&!state.selectionOrder.includes(entry.id))ordered.push(entry);return ordered}
+    function normalizeEntries(entries){
+      const directories=entries.filter(e=>e.kind==='directory').map(e=>[...e.parentPath,e.name]);
+      return entries.filter(entry=>!directories.some(path=>path.length<[...entry.parentPath,entry.name].length&&isPrefix(path,[...entry.parentPath,entry.name])));
+    }
+    function onItemClick(e){
+      if(e.target.closest('.rename-input'))return;const el=e.currentTarget,id=el.dataset.id,index=state.items.findIndex(x=>x.id===id);
+      if(e.ctrlKey||e.metaKey){if(state.selected.has(id)){state.selected.delete(id);state.selectionOrder=state.selectionOrder.filter(x=>x!==id)}else{state.selected.add(id);state.selectionOrder.push(id)}state.anchorIndex=index}
+      else if(e.shiftKey&&state.anchorIndex>=0){clearSelection();const [a,b]=[state.anchorIndex,index].sort((x,y)=>x-y);state.items.slice(a,b+1).forEach(x=>{state.selected.add(x.id);state.selectionOrder.push(x.id)})}
+      else{clearSelection();state.selected.add(id);state.selectionOrder=[id];state.anchorIndex=index}
+      state.renameId=null;renderSelectionOnly();
+    }
+    function onItemDoubleClick(e){if(e.target.closest('.rename-input')||Date.now()-state.lastDragEnd<500)return;const entry=entryById(e.currentTarget.dataset.id);if(entry)openItem(entry)}
+    function onItemContext(e){e.preventDefault();const id=e.currentTarget.dataset.id;if(!state.selected.has(id)){clearSelection();state.selected.add(id);state.selectionOrder=[id];state.anchorIndex=state.items.findIndex(x=>x.id===id);renderSelectionOnly()}showContextMenu(e.clientX,e.clientY,entryById(id))}
+    function renderSelectionOnly(){
+      $$('.file-item',els.fileArea).forEach(el=>{const yes=state.selected.has(el.dataset.id),badge=$('.selection-check',el);el.classList.toggle('selected',yes);el.setAttribute('aria-selected',yes);if(badge)badge.innerHTML=yes?selectionMarker(el.dataset.id):icon('check')});updateStatuses();setButtonStates()
+    }
+    function updateStatuses(){
+      const count=state.items.length,folders=state.items.filter(x=>x.kind==='directory').length,files=count-folders;
+      els.itemStatus.textContent=state.searchQuery?t('resultCount',{count}):t('folderCount',{folders,files});
+      const selected=selectedEntries(),size=selected.reduce((n,e)=>n+(e.size||0),0);els.selectionStatus.textContent=selected.length?`${t('selectedCount',{count:selected.length})}${size?` · ${formatSize(size)}`:''}`:'';
+      els.locationMeta.textContent=state.searchQuery?t('searchIn',{name:state.rootHandle?.name||''}):(state.path.length?state.path.at(-1):state.rootHandle?.name||'—');
+    }
+
+    function revokeThumbnails(){state.thumbGeneration++;state.thumbJobs.length=0;state.thumbObserver?.disconnect();for(const url of state.thumbUrls.values())URL.revokeObjectURL(url);state.thumbUrls.clear()}
+    function observeThumbnails(){
+      state.thumbObserver?.disconnect();state.thumbObserver=new IntersectionObserver(entries=>entries.forEach(x=>{if(x.isIntersecting&&!x.target.hasAttribute('src')&&!x.target.dataset.loading)loadThumbnail(x.target)}),{root:els.fileViewport,rootMargin:'160px'});
+      $$('.lazy-thumb',els.fileArea).forEach(img=>state.thumbObserver.observe(img));
+    }
+    function trimThumbnailCache(){
+      if(state.thumbUrls.size<=180)return;const viewport=els.fileViewport.getBoundingClientRect(),nodes=new Map($$('.lazy-thumb',els.fileArea).map(img=>[img.dataset.thumb,img]));
+      for(const [id,url] of state.thumbUrls){if(state.thumbUrls.size<=140)break;const img=nodes.get(id),rect=img?.getBoundingClientRect();if(rect&&rect.bottom>viewport.top-160&&rect.top<viewport.bottom+160)continue;if(img)img.removeAttribute('src');URL.revokeObjectURL(url);state.thumbUrls.delete(id)}
+    }
+    async function makeThumbnail(file){
+      const bitmap=await createImageBitmap(file,{resizeWidth:240,resizeQuality:'medium'});
+      try{const scale=Math.min(1,240/Math.max(bitmap.width,bitmap.height)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/webp',.72));canvas.width=canvas.height=0;if(!blob)throw new Error('Thumbnail encoding failed');return blob}finally{bitmap.close()}
+    }
+    function loadThumbnail(img){const entry=entryById(img.dataset.thumb);if(!entry)return;const url=state.thumbUrls.get(entry.id);if(url){img.src=url;return}img.dataset.loading='1';state.thumbJobs.push({img,entry,generation:state.thumbGeneration});pumpThumbnails()}
+    function pumpThumbnails(){
+      while(state.thumbActive<2&&state.thumbJobs.length){const job=state.thumbJobs.shift();if(job.generation!==state.thumbGeneration||!job.img.isConnected)continue;state.thumbActive++;
+        (async()=>{try{const blob=await makeThumbnail(await job.entry.handle.getFile());if(job.generation!==state.thumbGeneration||!job.img.isConnected)return;const url=URL.createObjectURL(blob);state.thumbUrls.set(job.entry.id,url);job.img.src=url;trimThumbnailCache()}catch{if(job.generation===state.thumbGeneration&&job.img.isConnected)job.img.replaceWith(document.createRange().createContextualFragment(visualHTML({...job.entry,ext:''},state.view==='list')))}finally{delete job.img.dataset.loading;state.thumbActive--;pumpThumbnails()}})()
+      }
+    }
+
+    function validName(name){return name && name!=='.'&&name!=='..'&&!/[<>:"/\\|?*\u0000-\u001F]/.test(name)&&!/[. ]$/.test(name)}
+    async function exists(dir,name){try{await dir.getFileHandle(name);return true}catch(e){if(e.name!=='NotFoundError')throw e}try{await dir.getDirectoryHandle(name);return true}catch(e){if(e.name==='NotFoundError')return false;throw e}}
+    async function uniqueName(dir,name,copyLabel=t('copySuffix')){
+      if(!await exists(dir,name))return name;const dot=name.lastIndexOf('.'),hasExt=dot>0;const base=hasExt?name.slice(0,dot):name,ext=hasExt?name.slice(dot):'';
+      let i=1,candidate;do{candidate=`${base} - ${copyLabel}${i>1?` (${i})`:''}${ext}`;i++}while(await exists(dir,candidate));return candidate;
+    }
+    function namingRuleKey(path){return JSON.stringify([state.rootHandle?.name||'',...path])}
+    function saveNamingRules(){localStorage.setItem('melf-naming-rules',JSON.stringify(state.namingRules))}
+    function getStoredNamingRule(path){return state.namingRules[namingRuleKey(path)]||null}
+    function getNamingRule(path){const rule=getStoredNamingRule(path);return rule?.enabled?rule:null}
+    function setNamingRule(path,rule){state.namingRules[namingRuleKey(path)]={...rule};saveNamingRules()}
+    function removeNamingRulesUnder(path){
+      const root=state.rootHandle?.name||'';let changed=false;
+      for(const key of Object.keys(state.namingRules)){try{const parts=JSON.parse(key);if(parts[0]===root&&isPrefix(path,parts.slice(1))){delete state.namingRules[key];changed=true}}catch{}}
+      if(changed)saveNamingRules();
+    }
+    function migrateNamingRules(oldPath,newPath){
+      const root=state.rootHandle?.name||'',updates=[];
+      for(const [key,rule] of Object.entries(state.namingRules)){try{const parts=JSON.parse(key),path=parts.slice(1);if(parts[0]===root&&isPrefix(oldPath,path)){updates.push([key,namingRuleKey([...newPath,...path.slice(oldPath.length)]),rule])}}catch{}}
+      if(!updates.length)return;for(const [oldKey,newKey,rule] of updates){delete state.namingRules[oldKey];state.namingRules[newKey]=rule}saveNamingRules();
+    }
+    function escapeRegExp(value){return String(value).replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}
+    function formatSequenceNumber(number,rule){if(number===0&&rule.plainZero)return '0';return String(number).padStart(Math.max(1,Number(rule.padding)||1),'0')}
+    function ruleApplies(entry,rule){return entry.kind==='file'&&(rule.scope==='files'||IMAGE_EXTS.has(extOf(entry.name)))}
+    function splitFileName(name){const dot=name.lastIndexOf('.');return dot>0?{stem:name.slice(0,dot),extension:name.slice(dot)}:{stem:name,extension:''}}
+    async function buildNamingPlan(entries,targetDir,rule,{ignoreNames=[]}={}){
+      if(!rule?.enabled)return entries.map(()=>null);
+      const ignored=new Set(ignoreNames.map(name=>name.toLocaleLowerCase())),taken=new Set(),occupied=new Set(),prefix=String(rule.prefix||''),pattern=new RegExp(`^${escapeRegExp(prefix)}(\\d+)$`);
+      for await(const [name,handle] of targetDir.entries()){
+        if(ignored.has(name.toLocaleLowerCase()))continue;taken.add(name.toLocaleLowerCase());
+        if(handle.kind==='file'){const match=splitFileName(name).stem.match(pattern);if(match)occupied.add(Number(match[1]))}
+      }
+      let cursor=Math.max(0,Number(rule.start)||0);const plan=[];
+      for(const entry of entries){
+        if(!ruleApplies(entry,rule)){plan.push(null);continue}
+        const extension=splitFileName(entry.name).extension;let candidate;
+        do{candidate=`${prefix}${formatSequenceNumber(cursor,rule)}${extension}`;if(occupied.has(cursor)||taken.has(candidate.toLocaleLowerCase()))cursor++;else break}while(true);
+        plan.push(candidate);occupied.add(cursor);taken.add(candidate.toLocaleLowerCase());cursor++;
+      }
+      return plan;
+    }
+    async function createFolder(){
+      if(!state.currentHandle||state.searchQuery)return;const name=await promptDialog(t('newFolder'),t('folderNamePrompt'),t('newFolder'));if(name==null)return;
+      if(!validName(name)){toast(t('invalidFolderName'),'error');return}if(await exists(state.currentHandle,name)){toast(t('nameExists'),'error');return}
+      await withBusy(t('creatingFolder'),async()=>{await state.currentHandle.getDirectoryHandle(name,{create:true});await refresh();toast(t('folderCreated'),'success')}).catch(()=>{});
+    }
+    async function addFiles(){
+      if(!state.currentHandle||state.searchQuery)return;
+      try{
+        if('showOpenFilePicker' in window){const handles=await window.showOpenFilePicker({multiple:true});await withBusy(t('addingFiles'),async()=>{const entries=handles.map(h=>({name:h.name,kind:h.kind,handle:h})),rule=getNamingRule(state.path),plan=await buildNamingPlan(entries,state.currentHandle,rule);for(let i=0;i<handles.length;i++){const name=plan[i]||await uniqueName(state.currentHandle,handles[i].name);await copyFile(handles[i],state.currentHandle,name)}await refresh();toast(t('filesAdded',{count:handles.length,rule:rule?t('ruleApplied'):''}), 'success')})}
+        else{const input=document.createElement('input');input.type='file';input.multiple=true;input.onchange=async()=>withBusy(t('addingFiles'),async()=>{const files=[...input.files],entries=files.map(f=>({name:f.name,kind:'file'})),rule=getNamingRule(state.path),plan=await buildNamingPlan(entries,state.currentHandle,rule);for(let i=0;i<files.length;i++){const f=files[i],name=plan[i]||await uniqueName(state.currentHandle,f.name);const d=await state.currentHandle.getFileHandle(name,{create:true});const w=await d.createWritable();await w.write(f);await w.close()}await refresh();toast(t('filesAdded',{count:files.length,rule:rule?t('ruleApplied'):''}),'success')});input.click()}
+      }catch(e){if(e.name!=='AbortError')handleError(e,'إضافة الملفات')}
+    }
+    function startRename(){const entries=selectedEntries();if(entries.length!==1)return;state.renameId=entries[0].id;render()}
+    function focusRename(){
+      const input=$('.rename-input',els.fileArea);if(!input)return;input.focus();const entry=entryById(state.renameId);let end=input.value.length;if(entry?.kind==='file'){const dot=input.value.lastIndexOf('.');if(dot>0)end=dot}input.setSelectionRange(0,end);
+      input.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();commitRename(input.value)}else if(e.key==='Escape'){e.preventDefault();cancelRename()}});
+      input.addEventListener('blur',()=>{if(state.renameId)setTimeout(()=>state.renameId&&commitRename(input.value),0)},{once:true});
+    }
+    function cancelRename(){state.renameId=null;render()}
+    async function commitRename(newName){
+      const entry=entryById(state.renameId);state.renameId=null;if(!entry)return;if(newName===entry.name){render();return}if(!validName(newName)){toast(t('invalidName'),'error');render();return}if(await exists(entry.parentHandle,newName)){toast(t('nameExists'),'error');render();return}
+      const query=state.searchQuery;let succeeded=false;
+      await withBusy(t('renaming'),async()=>{await moveOne(entry,entry.parentHandle,entry.parentPath,newName,true);if(!query)await refresh();succeeded=true;toast(t('renamed'),'success')}).catch(()=>render());
+      if(query&&succeeded)await searchRoot(query);
+    }
+
+    async function copyFile(source,targetDir,name){const file=await source.getFile();const dest=await targetDir.getFileHandle(name,{create:true});const writable=await dest.createWritable();try{await writable.write(file);await writable.close();const written=await dest.getFile();if(written.size!==file.size)throw new Error(t('verifyCopyFailed'))}catch(e){try{await writable.abort()}catch{}try{await targetDir.removeEntry(name)}catch{}throw e}}
+    async function copyDirectory(source,targetDir,name){
+      const dest=await targetDir.getDirectoryHandle(name,{create:true});
+      try{for await(const [childName,child] of source.entries()){if(child.kind==='file')await copyFile(child,dest,childName);else await copyDirectory(child,dest,childName)}return dest}
+      catch(e){try{await targetDir.removeEntry(name,{recursive:true})}catch{}throw e}
+    }
+    async function moveOne(entry,targetDir,targetPath,forcedName=null,strictName=false){
+      const sourcePath=[...entry.parentPath,entry.name];if(entry.kind==='directory'&&isPrefix(sourcePath,targetPath))throw new Error(t('selfMove'));
+      if(pathKey(entry.parentPath)===pathKey(targetPath)&&(!forcedName||forcedName===entry.name))return entry.name;
+      let name=forcedName||entry.name;if(!strictName)name=await uniqueName(targetDir,name,t('movedSuffix'));
+      if(entry.handle.move){try{await entry.handle.move(targetDir,name);if(entry.kind==='directory')migrateNamingRules(sourcePath,[...targetPath,name]);return name}catch(e){if(!['NotSupportedError','InvalidStateError','TypeError'].includes(e.name))console.warn('Native move unavailable, using verified copy',e)}}
+      if(entry.kind==='file')await copyFile(entry.handle,targetDir,name);else await copyDirectory(entry.handle,targetDir,name);
+      await entry.parentHandle.removeEntry(entry.name,{recursive:entry.kind==='directory'});if(entry.kind==='directory')migrateNamingRules(sourcePath,[...targetPath,name]);return name;
+    }
+    async function copyOne(entry,targetDir,name){if(entry.kind==='file')await copyFile(entry.handle,targetDir,name);else await copyDirectory(entry.handle,targetDir,name)}
+    function copySelection(mode){const entries=normalizeEntries(selectedEntries());if(!entries.length)return;state.clipboard={mode,entries:entries.map(e=>({...e,parentPath:[...e.parentPath]}))};render();toast(t(mode==='copy'?'copiedClipboard':'cutClipboard',{count:entries.length}),'success')}
+    async function pasteInto(targetDir=state.currentHandle,targetPath=state.path){
+      if(!state.clipboard?.entries.length||!targetDir)return;const clip=state.clipboard,query=state.searchQuery,rule=getNamingRule(targetPath),ignoreNames=clip.mode==='cut'?clip.entries.filter(e=>pathKey(e.parentPath)===pathKey(targetPath)).map(e=>e.name):[],plan=await buildNamingPlan(clip.entries,targetDir,rule,{ignoreNames});let succeeded=false;
+      await withBusy(t(clip.mode==='cut'?'moving':'copying'),async()=>{
+        let done=0;for(let i=0;i<clip.entries.length;i++){const entry=clip.entries[i];done++;els.taskStatus.textContent=t(clip.mode==='cut'?'moveProgress':'copyProgress',{done,total:clip.entries.length});if(clip.mode==='cut'){if(plan[i])await moveOne(entry,targetDir,targetPath,plan[i],true);else await moveOne(entry,targetDir,targetPath)}else{const sourcePath=[...entry.parentPath,entry.name];if(entry.kind==='directory'&&isPrefix(sourcePath,targetPath))throw new Error(t('selfCopy'));const name=plan[i]||await uniqueName(targetDir,entry.name,t('copySuffix'));await copyOne(entry,targetDir,name)}}
+        if(clip.mode==='cut')state.clipboard=null;if(!query)await refresh();succeeded=true;toast(t(clip.mode==='cut'?'movedDone':'copiedDone',{count:done,rule:rule?t('ruleApplied'):''}),'success')
+      }).catch(()=>{});
+      if(query&&succeeded)await searchRoot(query);
+    }
+    async function deleteSelection(){
+      const entries=normalizeEntries(selectedEntries());if(!entries.length)return;const names=entries.slice(0,4).map(e=>`• ${e.name}`).join('\n');const more=entries.length>4?`\n${t('otherItems',{count:entries.length-4})}`:'';
+      const ok=await confirmDialog(t('deletePermanent'),t('deletePrompt',{names,more}),true);if(!ok)return;
+      const query=state.searchQuery;let succeeded=false;
+      await withBusy(t('deleting'),async()=>{for(const e of entries){await e.parentHandle.removeEntry(e.name,{recursive:e.kind==='directory'});if(e.kind==='directory')removeNamingRulesUnder([...e.parentPath,e.name])}if(!query)await refresh();succeeded=true;toast(t('deletedDone',{count:entries.length}),'success')}).catch(()=>{});
+      if(query&&succeeded)await searchRoot(query);
+    }
+
+    async function searchRoot(query){
+      state.searchController?.abort();if(!query.trim()){state.searchQuery='';els.searchBanner.classList.add('hidden');await refresh();return}
+      const controller=new AbortController();state.searchController=controller;state.searchQuery=query.trim();state.searchScanned=0;clearSelection();setBusy(true,t('searching'));els.searchBanner.classList.remove('hidden');els.searchBannerText.textContent=t('searchProgress',{query:state.searchQuery});
+      const results=[],needle=state.searchQuery.toLocaleLowerCase('ar');let capped=false;
+      async function walk(dir,path){
+        for await(const [name,h] of dir.entries()){
+          if(controller.signal.aborted)throw new DOMException('Aborted','AbortError');state.searchScanned++;if(state.searchScanned>8000){capped=true;return}
+          const match=name.toLocaleLowerCase('ar').includes(needle);if(match){const e={name,handle:h,kind:h.kind,parentHandle:dir,parentPath:[...path],id:itemId(path,name),ext:extOf(name),size:null,modified:null,mime:''};if(h.kind==='file'){try{const f=await h.getFile();e.size=f.size;e.modified=f.lastModified;e.mime=f.type}catch{}}results.push(e);if(results.length>=1000){capped=true;return}}
+          if(h.kind==='directory'){await walk(h,[...path,name]);if(capped)return}
+        }
+      }
+      try{await walk(state.rootHandle,[]);if(controller.signal.aborted)return;state.items=results.sort(compareItems);render();renderBreadcrumbs();els.searchBannerText.textContent=t('searchResults',{count:results.length,query:state.searchQuery,capped:capped?t('searchLimit'):''});els.fileViewport.scrollTop=0}
+      catch(e){if(e.name!=='AbortError')handleError(e,'البحث')}finally{if(state.searchController===controller){setBusy(false);state.searchController=null}}
+    }
+    let searchTimer;function scheduleSearch(){clearTimeout(searchTimer);const q=els.search.value;els.searchClear.classList.toggle('visible',!!q);searchTimer=setTimeout(()=>searchRoot(q),320)}
+
+    async function loadTreeNode(node){if(node.loaded)return;const children=[];try{for await(const [name,h] of node.handle.entries())if(h.kind==='directory'){const path=[...node.path,name],id=pathKey(path);const child={id,name,handle:h,path,loaded:false,expanded:false,children:[]};children.push(child);state.treeNodes.set(id,child)}children.sort((a,b)=>collator.compare(a.name,b.name));node.children=children;node.loaded=true}catch(e){console.warn(e)}}
+    async function revealTreePath(path){
+      if(!state.treeRoot)return;let node=state.treeRoot;node.expanded=true;await loadTreeNode(node);for(const name of path){let child=node.children.find(x=>x.name===name);if(!child){node.loaded=false;await loadTreeNode(node);child=node.children.find(x=>x.name===name)}if(!child)break;child.expanded=true;await loadTreeNode(child);node=child}renderTree()
+    }
+    function renderTree(){
+      if(!state.treeRoot){els.folderTree.innerHTML='';return}
+      const rows=[];function add(node,depth){const current=pathKey(node.path)===pathKey(state.path);rows.push(`<div class="tree-row ${node.expanded?'expanded':''} ${current?'current':''}" data-tree="${escapeHTML(node.id)}" style="--depth:${depth}" title="${escapeHTML(node.name)}"><button class="tree-expander ${node.loaded&&!node.children.length?'blank':''}" data-expand="${escapeHTML(node.id)}" aria-label="${escapeHTML(t('expand'))}">${icon('chevron')}</button>${icon('folder')}<span class="tree-label" dir="auto">${escapeHTML(node.name)}</span></div>`);if(node.expanded)node.children.forEach(c=>add(c,depth+1))}add(state.treeRoot,0);els.folderTree.innerHTML=rows.join('');
+      $$('[data-tree]',els.folderTree).forEach(row=>row.addEventListener('click',e=>{if(e.target.closest('[data-expand]'))return;const n=state.treeNodes.get(row.dataset.tree);if(n)navigate(n.path)}));
+      $$('[data-expand]',els.folderTree).forEach(b=>b.onclick=async e=>{e.stopPropagation();const n=state.treeNodes.get(b.dataset.expand);if(!n)return;if(!n.loaded)await loadTreeNode(n);n.expanded=!n.expanded;renderTree()});
+    }
+
+    function setSort(key){if(state.sort.key===key)state.sort.direction=state.sort.direction==='asc'?'desc':'asc';else{state.sort.key=key;state.sort.direction='asc'}localStorage.setItem('melf-sort',state.sort.key);localStorage.setItem('melf-dir',state.sort.direction);closeMenus();render()}
+    function showSortMenu(){closeMenus();const r=$('#sortBtn').getBoundingClientRect();els.sortMenu.style.top=`${r.bottom+5}px`;els.sortMenu.style.left=`${Math.max(8,r.left-155)}px`;els.sortMenu.classList.add('open');$$('.menu-check',els.sortMenu).forEach(x=>x.textContent='');const key=$(`[data-sort="${state.sort.key}"] .menu-check`,els.sortMenu),dir=$(`[data-direction="${state.sort.direction}"] .menu-check`,els.sortMenu);if(key)key.innerHTML=icon('check');if(dir)dir.innerHTML=icon('check')}
+    function showContextMenu(x,y,entry=null){
+      closeMenus();const entries=selectedEntries(),one=entries.length===1,hasFiles=entries.some(e=>e.kind==='file'),folderPath=entry?.kind==='directory'?[...entry.parentPath,entry.name]:state.path,storedRule=getStoredNamingRule(folderPath);
+      els.contextMenu.innerHTML=`
+        ${!entry?`<button class="menu-item" data-action="new-folder" ${state.searchQuery?'disabled':''}>${icon('folder-plus')}${escapeHTML(t('newFolder'))}</button><button class="menu-item" data-action="paste" ${state.clipboard?.entries?.length&&!state.searchQuery?'':'disabled'}>${icon('paste')}${escapeHTML(t('pasteHere'))}</button><button class="menu-item" data-action="naming-current">${icon('sort')}${escapeHTML(t('autoNamingHere'))}${storedRule?.enabled?` · ${escapeHTML(t('enabled'))}`:''}</button><div class="menu-sep"></div>`:''}
+        ${entry?.kind==='directory'?`<button class="menu-item" data-action="open">${icon('open')}${escapeHTML(t('open'))}</button><button class="menu-item" data-action="naming-folder">${icon('sort')}${escapeHTML(t('namingRule'))}${storedRule?.enabled?` · ${escapeHTML(t('enabled'))}`:''}</button>`:''}
+        <button class="menu-item" data-action="copy" ${entries.length?'':'disabled'}>${icon('copy')}${escapeHTML(t('copy'))}</button><button class="menu-item" data-action="cut" ${entries.length?'':'disabled'}>${icon('cut')}${escapeHTML(t('cut'))}</button>
+        ${entry?.kind==='directory'?`<button class="menu-item" data-action="paste-in" ${state.clipboard?.entries?.length?'':'disabled'}>${icon('paste')}${escapeHTML(t('pasteInside'))}</button>`:''}
+        ${hasFiles?`<button class="menu-item" data-action="batch-number">${icon('rename')}${escapeHTML(t('numberSelection'))}</button>`:''}
+        <div class="menu-sep"></div><button class="menu-item" data-action="rename" ${one?'':'disabled'}>${icon('rename')}${escapeHTML(t('rename'))}</button><button class="menu-item danger" data-action="delete" ${entries.length?'':'disabled'}>${icon('trash')}${escapeHTML(t('delete'))}</button>`;
+      els.contextMenu.classList.add('open');const w=Math.max(235,els.contextMenu.offsetWidth),h=els.contextMenu.offsetHeight;els.contextMenu.style.left=`${Math.min(x,innerWidth-w-8)}px`;els.contextMenu.style.top=`${Math.min(y,innerHeight-h-8)}px`;
+      $$('[data-action]',els.contextMenu).forEach(b=>b.onclick=async()=>{closeMenus();const a=b.dataset.action;if(a==='new-folder')createFolder();if(a==='paste')pasteInto();if(a==='open')openItem(entry);if(a==='copy')copySelection('copy');if(a==='cut')copySelection('cut');if(a==='rename')startRename();if(a==='delete')deleteSelection();if(a==='batch-number')openBatchNamingDialog();if(a==='naming-current')openFolderNamingDialog(state.currentHandle,state.path,state.path.at(-1)||state.rootHandle.name);if(a==='naming-folder'&&entry?.kind==='directory')openFolderNamingDialog(entry.handle,[...entry.parentPath,entry.name],entry.name);if(a==='paste-in'&&entry?.kind==='directory')pasteInto(entry.handle,[...entry.parentPath,entry.name])});
+    }
+    function closeMenus(){els.sortMenu.classList.remove('open');els.contextMenu.classList.remove('open')}
+
+    function canDropInternalAt(targetPath){
+      if(!state.dragEntries?.length)return true;
+      const changesLocation=state.dragEntries.some(entry=>pathKey(entry.parentPath)!==pathKey(targetPath));
+      const entersItself=state.dragEntries.some(entry=>entry.kind==='directory'&&isPrefix([...entry.parentPath,entry.name],targetPath));
+      return changesLocation&&!entersItself;
+    }
+    function showViewportDropCue(mode){els.fileViewport.dataset.dropLabel=t(mode==='internal'?'moveHere':'addHere');els.fileViewport.classList.remove('internal-drop','external-drop');els.fileViewport.classList.add('drag-target',mode==='internal'?'internal-drop':'external-drop')}
+    function onDragStart(e){
+      const id=e.currentTarget.dataset.id;if(!state.selected.has(id)){clearSelection();state.selected.add(id);state.selectionOrder=[id];renderSelectionOnly()}
+      state.dragEntries=normalizeEntries(selectedEntries());e.dataTransfer.clearData();e.dataTransfer.effectAllowed='copyMove';e.dataTransfer.setData('application/x-melf-items','internal');e.dataTransfer.setData('text/plain',state.dragEntries.map(x=>x.name).join('\n'));
+      const ghost=document.createElement('div');ghost.className='drag-ghost';ghost.innerHTML=`<span class="drag-ghost-count">${state.dragEntries.length}</span><span class="drag-ghost-name" dir="auto">${escapeHTML(state.dragEntries.length===1?state.dragEntries[0].name:t('items',{count:state.dragEntries.length}))}</span>`;document.body.appendChild(ghost);e.dataTransfer.setDragImage(ghost,18,19);requestAnimationFrame(()=>{e.currentTarget.classList.add('dragging');ghost.remove()})
+    }
+    function clearDragStyles(){if(state.dragEntries?.length)state.lastDragEnd=Date.now();state.dragEntries=null;$$('.drop-target,.dragging,.drag-ghost').forEach(x=>x.classList.remove('drop-target','dragging'));$$('.drag-ghost').forEach(x=>x.remove());els.fileViewport.classList.remove('drag-target','internal-drop','external-drop')}
+    function onItemDragOver(e){const entry=entryById(e.currentTarget.dataset.id);if(entry?.kind!=='directory')return;const targetPath=[...entry.parentPath,entry.name];e.preventDefault();e.stopPropagation();if(!canDropInternalAt(targetPath)){e.dataTransfer.dropEffect='none';e.currentTarget.classList.remove('drop-target');return}e.dataTransfer.dropEffect=state.dragEntries?'move':'copy';e.currentTarget.classList.add('drop-target');els.fileViewport.classList.remove('drag-target','internal-drop','external-drop')}
+    async function onItemDrop(e){const target=entryById(e.currentTarget.dataset.id);if(target?.kind!=='directory')return;const targetPath=[...target.parentPath,target.name];e.preventDefault();e.stopPropagation();e.currentTarget.classList.remove('drop-target');if(state.dragEntries?.length&&!canDropInternalAt(targetPath)){clearDragStyles();return}await handleDrop(e.dataTransfer,target.handle,targetPath)}
+    async function handleDrop(dt,targetDir,targetPath){
+      try{
+        const query=state.searchQuery,rule=getNamingRule(targetPath);
+        if(state.dragEntries?.length){const moving=[...state.dragEntries],ignoreNames=moving.filter(e=>pathKey(e.parentPath)===pathKey(targetPath)).map(e=>e.name),plan=await buildNamingPlan(moving,targetDir,rule,{ignoreNames});let succeeded=false;clearDragStyles();await withBusy(t('draggingItems'),async()=>{for(let i=0;i<moving.length;i++)plan[i]?await moveOne(moving[i],targetDir,targetPath,plan[i],true):await moveOne(moving[i],targetDir,targetPath);if(!query)await refresh();succeeded=true;toast(t('movedDone',{count:moving.length,rule:rule?t('ruleApplied'):''}),'success')});if(query&&succeeded)await searchRoot(query);return}
+        const handles=[];for(const item of [...dt.items]){if(item.kind==='file'&&item.getAsFileSystemHandle){const h=await item.getAsFileSystemHandle();if(h)handles.push(h)}}
+        if(handles.length){const entries=handles.map(h=>({name:h.name,kind:h.kind,handle:h})),plan=await buildNamingPlan(entries,targetDir,rule);let succeeded=false;await withBusy(t('copying'),async()=>{for(let i=0;i<handles.length;i++){const h=handles[i],name=plan[i]||await uniqueName(targetDir,h.name);if(h.kind==='file')await copyFile(h,targetDir,name);else await copyDirectory(h,targetDir,name)}if(!query)await refresh();succeeded=true;toast(t('dragAdded',{count:handles.length,rule:rule?t('ruleApplied'):''}),'success')});if(query&&succeeded)await searchRoot(query)}
+        else if(dt.files?.length){const files=[...dt.files],entries=files.map(f=>({name:f.name,kind:'file'})),plan=await buildNamingPlan(entries,targetDir,rule);let succeeded=false;await withBusy(t('copying'),async()=>{for(let i=0;i<files.length;i++){const f=files[i],name=plan[i]||await uniqueName(targetDir,f.name);const d=await targetDir.getFileHandle(name,{create:true});const w=await d.createWritable();await w.write(f);await w.close()}if(!query)await refresh();succeeded=true;toast(t('filesAdded',{count:files.length,rule:rule?t('ruleApplied'):''}),'success')});if(query&&succeeded)await searchRoot(query)}
+      }catch(e){handleError(e,t('dragHelp'))}finally{clearDragStyles()}
+    }
+
+    function dialogBase(title,message,{input=false,value='',danger=false}={}){
+      els.modalTitle.textContent=title;els.modalMessage.textContent=message;els.modalInput.classList.toggle('hidden',!input);els.modalInput.value=value;els.modalConfirm.className=danger?'danger-confirm':'confirm';els.modalIcon.setAttribute('href',danger?'#i-warning':'#i-info');els.modal.returnValue='';els.modal.showModal();if(input)requestAnimationFrame(()=>{els.modalInput.focus();els.modalInput.select()});return new Promise(resolve=>els.modal.addEventListener('close',()=>resolve(els.modal.returnValue==='confirm'?(input?els.modalInput.value:true):(input?null:false)),{once:true}))
+    }
+    function confirmDialog(title,message,danger=false){return dialogBase(title,message,{danger})}
+    function promptDialog(title,message,value=''){return dialogBase(title,message,{input:true,value})}
+
+    function defaultNamingRule(){return {enabled:true,scope:'images',prefix:'',start:0,padding:2,plainZero:false}}
+    function readNamingForm(){return {enabled:state.namingContext?.mode==='batch'?true:els.namingEnabled.checked,scope:els.namingScope.value,prefix:els.namingPrefix.value,start:Math.max(0,Math.floor(Number(els.namingStart.value)||0)),padding:Math.max(1,Number(els.namingPadding.value)||1),plainZero:els.namingPlainZero.checked}}
+    function updateNamingPreview(){const rule=readNamingForm(),values=[];for(let i=0;i<4;i++)values.push(`${rule.prefix}${formatSequenceNumber(rule.start+i,rule)}.jpg`);els.namingPreview.textContent=values.join('  ·  ')}
+    function fillNamingForm(rule){els.namingEnabled.checked=rule.enabled!==false;els.namingScope.value=rule.scope||'images';els.namingPrefix.value=rule.prefix||'';els.namingStart.value=Math.max(0,Number(rule.start)||0);els.namingPadding.value=String(Math.max(1,Number(rule.padding)||1));els.namingPlainZero.checked=!!rule.plainZero;updateNamingPreview()}
+    function openFolderNamingDialog(handle,path,name){
+      const stored=getStoredNamingRule(path);state.namingContext={mode:'folder',handle,path:[...path],name};els.namingTitle.textContent=t('autoNamingFolder');els.namingIntro.textContent=t('ruleFolderIntro',{name});els.namingEnabledRow.classList.remove('hidden');els.namingRemove.classList.toggle('hidden',!stored);els.namingSave.textContent=t('saveRule');fillNamingForm(stored||defaultNamingRule());els.namingDialog.showModal()
+    }
+    function openBatchNamingDialog(){
+      const ordered=selectedEntriesInOrder().filter(e=>e.kind==='file');if(!ordered.length){toast(t('selectOneFile'),'error');return}
+      const parentKey=pathKey(ordered[0].parentPath);if(ordered.some(e=>pathKey(e.parentPath)!==parentKey)){toast(t('sameFolderOnly'),'error');return}
+      state.namingContext={mode:'batch',entries:ordered};els.namingTitle.textContent=t('batchNumber');els.namingIntro.textContent=t('batchIntro',{count:ordered.length});els.namingEnabledRow.classList.add('hidden');els.namingRemove.classList.add('hidden');els.namingSave.textContent=t('previewApply');fillNamingForm(defaultNamingRule());els.namingDialog.showModal()
+    }
+    async function rollbackBatchRename(staged,parent,path){
+      const recoverable=[];
+      for(const item of staged){try{if(!await exists(parent,item.currentName))continue;const handle=await parent.getFileHandle(item.currentName),extension=splitFileName(item.originalName).extension,temp=await uniqueName(parent,`.__melf_recover_${crypto.randomUUID()}${extension}`);await moveOne({name:item.currentName,kind:'file',handle,parentHandle:parent,parentPath:path},parent,path,temp,true);recoverable.push({...item,currentName:temp})}catch(error){console.error('Recovery staging failed',error)}}
+      for(const item of recoverable){try{if(await exists(parent,item.originalName))continue;const handle=await parent.getFileHandle(item.currentName);await moveOne({name:item.currentName,kind:'file',handle,parentHandle:parent,parentPath:path},parent,path,item.originalName,true)}catch(error){console.error('Recovery restore failed',error)}}
+    }
+    async function applyBatchNaming(rule){
+      const context=state.namingContext,ordered=(context?.entries||[]).filter(entry=>ruleApplies(entry,rule));if(!ordered.length){toast(t(rule.scope==='images'?'noImagesSelected':'noFilesSelected'),'error');return}
+      const parent=ordered[0].parentHandle,path=[...ordered[0].parentPath],plan=await buildNamingPlan(ordered,parent,rule,{ignoreNames:ordered.map(e=>e.name)}),query=state.searchQuery;let succeeded=false;
+      const summary=plan.slice(0,6).map((name,i)=>`${ordered[i].name}  ←  ${name}`).join('\n')+(plan.length>6?`\n${t('moreFiles',{count:plan.length-6})}`:''),ok=await confirmDialog(t('confirmNumbering'),t('numberingPrompt',{summary}));if(!ok)return;
+      await withBusy(t('numbering'),async()=>{
+        const staged=[];
+        try{
+          for(let i=0;i<ordered.length;i++){const entry=ordered[i],extension=splitFileName(entry.name).extension,temp=await uniqueName(parent,`.__melf_stage_${crypto.randomUUID()}${extension}`);await moveOne(entry,parent,path,temp,true);staged.push({originalName:entry.name,currentName:temp,finalName:plan[i]})}
+          for(const item of staged){const handle=await parent.getFileHandle(item.currentName);await moveOne({name:item.currentName,kind:'file',handle,parentHandle:parent,parentPath:path},parent,path,item.finalName,true);item.currentName=item.finalName}
+          if(!query)await refresh();succeeded=true;toast(t('numberedDone',{count:ordered.length}),'success')
+        }catch(error){await rollbackBatchRename(staged,parent,path);throw error}
+      }).catch(()=>{});
+      if(query&&succeeded)await searchRoot(query)
+    }
+
+    function toggleView(){state.view=state.view==='grid'?'list':'grid';localStorage.setItem('melf-view',state.view);$('#viewBtn use').setAttribute('href',state.view==='grid'?'#i-list':'#i-grid');$('#viewBtn').title=state.view==='grid'?t('listView'):t('gridView');revokeThumbnails();render()}
+    function toggleSidebar(){if(innerWidth<=820)els.app.classList.toggle('mobile-sidebar');else{els.app.classList.toggle('sidebar-collapsed');localStorage.setItem('melf-sidebar',els.app.classList.contains('sidebar-collapsed')?'0':'1')}}
+    function keyboardHandler(e){
+      if(els.imageDialog.open){if(e.key==='ArrowLeft'||e.key==='ArrowRight'){e.preventDefault();stepImageViewer((e.key==='ArrowRight')===(state.lang==='ar')?-1:1)}return}
+      if(els.modal.open||els.namingDialog.open||/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)&&e.target!==els.fileViewport)return;
+      if(e.key==='F1'){e.preventDefault();renderHelp();els.helpDialog.showModal()}else if(e.key==='F5'){e.preventDefault();refresh()}else if(e.key==='F2'){e.preventDefault();startRename()}else if(e.key==='Delete'){e.preventDefault();deleteSelection()}else if(e.key==='Backspace'){e.preventDefault();if(state.path.length)navigate(state.path.slice(0,-1))}
+      else if(e.altKey&&e.key==='ArrowUp'){e.preventDefault();if(state.path.length)navigate(state.path.slice(0,-1))}else if(e.altKey&&e.key==='ArrowLeft'){e.preventDefault();goHistory(-1)}else if(e.altKey&&e.key==='ArrowRight'){e.preventDefault();goHistory(1)}
+      else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='a'){e.preventDefault();clearSelection();state.items.forEach(x=>{state.selected.add(x.id);state.selectionOrder.push(x.id)});renderSelectionOnly()}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='c'){e.preventDefault();copySelection('copy')}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='x'){e.preventDefault();copySelection('cut')}else if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='v'){e.preventDefault();pasteInto()}else if(e.ctrlKey&&e.shiftKey&&e.key.toLowerCase()==='n'){e.preventDefault();createFolder()}else if(e.key==='Enter'&&state.selected.size===1){openItem(selectedEntries()[0])}else if(e.key==='Escape'){closeMenus();clearSelection();renderSelectionOnly()}
+    }
+
+    function wire(){
+      $('#chooseRootBtn').onclick=chooseRoot;$('#emptyChooseBtn').onclick=chooseRoot;els.restoreBtn.onclick=restoreRoot;els.emptyRestoreBtn.onclick=restoreRoot;
+      $('#sidebarToggle').onclick=toggleSidebar;$('#backBtn').onclick=()=>goHistory(-1);$('#forwardBtn').onclick=()=>goHistory(1);$('#upBtn').onclick=()=>navigate(state.path.slice(0,-1));$('#refreshBtn').onclick=()=>refresh();
+      $('#newFolderBtn').onclick=createFolder;$('#addFilesBtn').onclick=addFiles;$('#copyBtn').onclick=()=>copySelection('copy');$('#cutBtn').onclick=()=>copySelection('cut');$('#pasteBtn').onclick=()=>pasteInto();$('#deleteBtn').onclick=deleteSelection;$('#renameBtn').onclick=startRename;
+      $('#viewBtn').onclick=toggleView;$('#sortBtn').onclick=showSortMenu;$('#homeLink').onclick=()=>navigate([]);
+      els.langBtn.onclick=()=>{state.lang=state.lang==='ar'?'en':'ar';localStorage.setItem('melf-lang',state.lang);closeMenus();applyLanguage()};els.helpBtn.onclick=()=>{renderHelp();els.helpDialog.showModal()};
+      els.imageViewerClose.onclick=closeImageViewer;els.imageViewerPrev.onclick=()=>stepImageViewer(-1);els.imageViewerNext.onclick=()=>stepImageViewer(1);els.imageDialog.addEventListener('close',releaseImageViewer);
+      els.search.addEventListener('input',scheduleSearch);els.searchClear.onclick=()=>{els.search.value='';els.searchClear.classList.remove('visible');searchRoot('')};$('#cancelSearch').onclick=()=>{els.search.value='';els.searchClear.classList.remove('visible');searchRoot('')};
+      $$('[data-sort]',els.sortMenu).forEach(b=>b.onclick=()=>setSort(b.dataset.sort));$$('[data-direction]',els.sortMenu).forEach(b=>b.onclick=()=>{state.sort.direction=b.dataset.direction;localStorage.setItem('melf-dir',state.sort.direction);closeMenus();render()});
+      document.addEventListener('click',e=>{if(!e.target.closest('.popover,.context-menu,#sortBtn'))closeMenus()});document.addEventListener('keydown',keyboardHandler);
+      document.addEventListener('dragover',e=>{if(state.dragEntries?.length||[...e.dataTransfer.types].includes('Files'))e.preventDefault()});
+       document.addEventListener('drop',e=>{if(!e.defaultPrevented&&(state.dragEntries?.length||[...e.dataTransfer.types].includes('Files'))){e.preventDefault();clearDragStyles();toast(t('dropInside'),'info')}});
+      els.fileViewport.addEventListener('click',e=>{if(e.target===els.fileViewport||e.target===els.fileArea){clearSelection();renderSelectionOnly()}});
+      els.fileViewport.addEventListener('contextmenu',e=>{if(!e.target.closest('.file-item')){e.preventDefault();clearSelection();renderSelectionOnly();showContextMenu(e.clientX,e.clientY)}});
+      els.fileViewport.addEventListener('dragover',e=>{if(e.target.closest('.file-item[data-id]')?.classList.contains('drop-target'))return;e.preventDefault();if(state.dragEntries?.length){if(!canDropInternalAt(state.path)){e.dataTransfer.dropEffect='none';els.fileViewport.classList.remove('drag-target','internal-drop','external-drop');return}e.dataTransfer.dropEffect='move';showViewportDropCue('internal')}else{e.dataTransfer.dropEffect='copy';showViewportDropCue('external')}});
+      els.fileViewport.addEventListener('dragleave',e=>{if(!els.fileViewport.contains(e.relatedTarget))els.fileViewport.classList.remove('drag-target','internal-drop','external-drop')});
+      els.fileViewport.addEventListener('drop',async e=>{if(e.target.closest('.file-item')?.classList.contains('drop-target'))return;e.preventDefault();els.fileViewport.classList.remove('drag-target','internal-drop','external-drop');if(state.dragEntries?.length&&!canDropInternalAt(state.path)){clearDragStyles();return}await handleDrop(e.dataTransfer,state.currentHandle,state.path)});
+      window.addEventListener('beforeunload',()=>{revokeThumbnails();releaseImageViewer()});window.addEventListener('resize',closeMenus);
+       els.modalForm.addEventListener('submit',e=>{if(e.submitter?.value==='confirm'&&!els.modalInput.classList.contains('hidden')&&!validName(els.modalInput.value)){e.preventDefault();toast(t('invalidName'),'error');els.modalInput.focus()}});
+      [els.namingEnabled,els.namingScope,els.namingPrefix,els.namingStart,els.namingPadding,els.namingPlainZero].forEach(control=>{control.addEventListener('input',updateNamingPreview);control.addEventListener('change',updateNamingPreview)});
+       els.namingForm.addEventListener('submit',async e=>{e.preventDefault();if(e.submitter?.value==='cancel'){els.namingDialog.close('cancel');return}const rule=readNamingForm();if(/[<>:"/\\|?*\u0000-\u001F]/.test(rule.prefix)){toast(t('invalidPrefix'),'error');els.namingPrefix.focus();return}const context=state.namingContext;els.namingDialog.close('confirm');if(context?.mode==='folder'){setNamingRule(context.path,rule);toast(t(rule.enabled?'ruleActivated':'rulePaused'),'success')}else if(context?.mode==='batch')await applyBatchNaming(rule)});
+       els.namingRemove.addEventListener('click',()=>{const context=state.namingContext;if(context?.mode!=='folder')return;delete state.namingRules[namingRuleKey(context.path)];saveNamingRules();els.namingDialog.close('remove');toast(t('ruleRemoved'),'success')});
+    }
+    async function init(){
+      wire();if(localStorage.getItem('melf-sidebar')==='0'&&innerWidth>820)els.app.classList.add('sidebar-collapsed');$('#viewBtn use').setAttribute('href',state.view==='grid'?'#i-list':'#i-grid');
+      const supported=window.isSecureContext&&'showDirectoryPicker' in window;$('#supportNote').textContent=supported?t('localSupported'):t('contextUnsupported');
+      const saved=await loadSavedHandle();if(saved?.handle){state.restoredHandle=saved.handle;els.restoreSection.classList.remove('hidden');els.restoreName.textContent=saved.name||saved.handle.name;els.emptyRestoreBtn.classList.remove('hidden')}
+      renderRecents();renderBreadcrumbs();setButtonStates();applyLanguage({rerender:false});
+    }
+    init();
+  })();
+  </script>
+</body>
+</html>
